@@ -1,6 +1,8 @@
-
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ATSPage from './pages/ATSPage';
+import DashboardPage from './pages/DashboardPage';
+import './App.css';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -26,7 +28,7 @@ class ErrorBoundary extends React.Component {
             <p className="text-gray-600 mb-4">
               The application encountered an error. Please refresh the page to try again.
             </p>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
             >
@@ -45,9 +47,12 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   return (
     <ErrorBoundary>
-      <div className="App">
-        <ATSPage />
-      </div>
+      <Router>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/ats" element={<ATSPage />} />
+        </Routes>
+      </Router>
     </ErrorBoundary>
   );
 }
