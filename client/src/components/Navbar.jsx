@@ -1,70 +1,110 @@
+
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
+  const navigation = [
+    { name: 'Dashboard', href: '/', icon: '🏠' },
+    { name: 'ATS', href: '/ats', icon: '🎯' },
+    { name: 'Analytics', href: '/analytics', icon: '📊' },
+    { name: 'Jobs', href: '/jobs', icon: '💼' },
+    { name: 'Candidates', href: '/candidates', icon: '👥' },
+  ];
+
+  const isActive = (href) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
+  };
+
   return (
-    <nav className="bg-white bg-opacity-95 backdrop-blur-sm shadow-lg border-b border-gray-200">
+    <nav className="relative z-50 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <div className="flex items-center space-x-3">
-            <div className="text-2xl">🎯</div>
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-3 group">
+            <div className="text-3xl group-hover:scale-110 transition-transform duration-300">🎯</div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">ATS Pro</h1>
-              <p className="text-xs text-gray-600">Applicant Tracking System</p>
+              <div className="text-2xl font-black bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Akshay ATS Pro
+              </div>
+              <div className="text-xs text-gray-400 font-medium">Smart Hiring Platform</div>
             </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-2">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  isActive(item.href)
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105'
+                }`}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.name}</span>
+              </Link>
+            ))}
           </div>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/"
-              className={`text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === '/' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : ''
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/ats"
-              className={`text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === '/ats' ? 'text-blue-600 border-b-2 border-blue-600 pb-1' : ''
-              }`}
-            >
-              ATS Processing
-            </Link>
-            <a href="#analytics" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Analytics
-            </a>
-            <a href="#jobs" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Jobs
-            </a>
-            <a href="#candidates" className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-              Candidates
-            </a>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-500 hover:text-gray-700 p-2 rounded-full transition-colors">
-              🔔
-            </button>
-            <button className="text-gray-500 hover:text-gray-700 p-2 rounded-full transition-colors">
-              ⚙️
-            </button>
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-              U
+          {/* User Menu */}
+          <div className="hidden md:flex items-center space-x-4">
+            <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 rounded-full border border-white/20">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-gray-300">Online</span>
             </div>
+            
+            <button className="flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all duration-300 hover:scale-105">
+              <span className="text-lg">👤</span>
+              <span className="hidden lg:block">Admin</span>
+            </button>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button className="text-gray-500 hover:text-gray-700 p-2">
-              ☰
-            </button>
-          </div>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden flex items-center justify-center p-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <span className="text-xl">{isOpen ? '✕' : '☰'}</span>
+          </button>
         </div>
+
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="md:hidden py-6 border-t border-white/20">
+            <div className="space-y-3">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center space-x-3 px-6 py-4 rounded-xl font-medium transition-all duration-300 ${
+                    isActive(item.href)
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <span className="text-xl">{item.icon}</span>
+                  <span>{item.name}</span>
+                </Link>
+              ))}
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-white/20">
+              <button className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl text-white font-medium">
+                <span className="text-lg">👤</span>
+                <span>Admin Panel</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

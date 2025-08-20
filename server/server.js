@@ -5,12 +5,18 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GeminiService } from './services/geminiService.js';
 import { config } from './config/environment.js';
+import connectDB from './config/database.js';
+import JobRole from './models/JobRole.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Connect to MongoDB
+connectDB();
 
 // Middleware
 app.use(cors());
@@ -70,7 +76,146 @@ app.get('/api/system/status', (req, res) => {
   }
 });
 
-// Job description endpoints
+// Job Roles endpoints
+app.get('/api/job-roles', async (req, res) => {
+  try {
+    const jobRoles = await JobRole.find({ isActive: true }).sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: jobRoles
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/job-roles', async (req, res) => {
+  try {
+    const { title, description, department, experienceLevel, skills, location, salaryRange } = req.body;
+
+    if (!title || !description || !department || !experienceLevel) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title, description, department, and experience level are required'
+      });
+    }
+
+    const jobRole = new JobRole({
+      title,
+      description,
+      department,
+      experienceLevel,
+      skills: skills || [],
+      location,
+      salaryRange
+    });
+
+    await jobRole.save();
+
+    res.status(201).json({
+      success: true,
+      data: jobRole
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/job-roles/:id', async (req, res) => {
+  try {
+    const jobRole = await JobRole.findById(req.params.id);
+    if (!jobRole) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job role not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: jobRole
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.put('/api/job-roles/:id', async (req, res) => {
+  try {
+    const { title, description, department, experienceLevel, skills, location, salaryRange, isActive } = req.body;
+
+    const jobRole = await JobRole.findByIdAndUpdate(
+      req.params.id,
+      {
+        title,
+        description,
+        department,
+        experienceLevel,
+        skills,
+        location,
+        salaryRange,
+        isActive,
+        updatedAt: Date.now()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!jobRole) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job role not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: jobRole
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.delete('/api/job-roles/:id', async (req, res) => {
+  try {
+    const jobRole = await JobRole.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!jobRole) {
+      return res.status(404).json({
+        success: false,
+        error: 'Job role not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { message: 'Job role deactivated successfully' }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Legacy job description endpoints (for backward compatibility)
 let currentJobDescription = '';
 
 app.get('/api/job-description', (req, res) => {
@@ -230,11 +375,12 @@ app.use((error, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - FIXED: Use proper middleware format
+app.use((req, res, next) => {
   res.status(404).json({
     success: false,
-    error: 'Endpoint not found'
+    error: 'Endpoint not found',
+    path: req.originalUrl
   });
 });
 

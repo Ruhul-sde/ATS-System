@@ -1,329 +1,199 @@
-import { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
-import Dashboard from '../components/Dashboard';
-import Header from '../components/Header';
-import JobDescription from '../components/JobDescription';
+
+import { useState } from 'react';
 import FileUpload from '../components/FileUpload';
+import JobDescription from '../components/JobDescription';
 import ProcessButton from '../components/ProcessButton';
-import Message from '../components/Message';
-import InfoSection from '../components/InfoSection';
-import Footer from '../components/Footer';
 import AIAnalysis from '../components/AIAnalysis';
+import InfoSection from '../components/InfoSection';
+import Message from '../components/Message';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 export default function ATSPage() {
   const [files, setFiles] = useState([]);
   const [jobDescription, setJobDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [aiResults, setAiResults] = useState([]);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState({ current: 0, total: 0 });
+  const [results, setResults] = useState([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [progress, setProgress] = useState(0);
 
-  // Load current job description on component mount
-  useEffect(() => {
-    fetchJobDescription();
-  }, []);
-
-  const fetchJobDescription = async () => {
-    try {
-      const response = await fetch('/api/job-description');
-      const data = await response.json();
-      setJobDescription(data.description);
-    } catch (error) {
-      console.error('Error fetching job description:', error);
-    }
+  const handleFileChange = (event) => {
+    const selectedFiles = Array.from(event.target.files);
+    setFiles(selectedFiles);
+    setMessage({ type: 'success', text: `${selectedFiles.length} file(s) selected successfully!` });
   };
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    const validFiles = selectedFiles.filter(file => 
-      file.type === 'application/pdf' || 
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    );
-
-    if (validFiles.length !== selectedFiles.length) {
-      setMessage('Some files were filtered out. Only PDF and DOCX files are allowed.');
-    }
-
-    setFiles(validFiles);
+  const handleJobDescriptionChange = (value) => {
+    setJobDescription(value);
   };
 
-  const updateJobDescription = async (newDescription) => {
-    try {
-      const response = await fetch('/api/job-description', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description: newDescription }),
-      });
-
-      if (response.ok) {
-        setMessage('Job description updated successfully!');
-        setTimeout(() => setMessage(''), 3000);
-      }
-    } catch (error) {
-      console.error('Error updating job description:', error);
-      setMessage('Error updating job description.');
-    }
-  };
-
-  const extractTextFromFile = async (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        // For PDFs and DOCX, we'll use a simple text extraction
-        // In a real app, you'd use libraries like pdf-parse or mammoth
-        resolve(e.target.result);
-      };
-      reader.onerror = reject;
-      reader.readAsText(file);
-    });
-  };
-
-  const analyzeWithAI = async () => {
+  const handleProcess = async () => {
     if (files.length === 0) {
-      setMessage('Please select files to analyze.');
+      setMessage({ type: 'error', text: 'Please select at least one resume file.' });
       return;
     }
 
     if (!jobDescription.trim()) {
-      setMessage('Please enter a job description.');
+      setMessage({ type: 'error', text: 'Please enter a job description.' });
       return;
     }
 
-    setAiLoading(true);
-    setMessage('');
-    setAiResults([]);
-
-    try {
-      const resumes = [];
-
-      // Convert files to text
-      for (const file of files) {
-        const fileText = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.onerror = reject;
-          reader.readAsText(file);
-        });
-
-        resumes.push({
-          fileName: file.name,
-          text: fileText
-        });
-      }
-
-      // Use batch analysis with progress tracking
-      const response = await fetch('/api/analyze/batch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ resumes, jobDescription }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let results = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
-
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line.replace('data: ', ''));
-
-            if (data.type === 'progress') {
-              setMessage(`Analyzing resume ${data.current} of ${data.total}...`);
-            } else if (data.type === 'complete') {
-              results = data.results;
-            } else if (data.type === 'error') {
-              throw new Error(data.error);
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse SSE data:', parseError);
-          }
-        }
-      }
-
-      setAiResults(results);
-      setMessage(`AI Analysis complete! Processed ${results.length} resumes.`);
-    } catch (error) {
-      console.error('AI Analysis error:', error);
-      setMessage(`AI Analysis Error: ${error.message}`);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const processResumes = async () => {
-    if (files.length === 0) {
-      setMessage('Please select files to process.');
-      return;
-    }
-
-    setLoading(true);
-    setMessage('');
+    setIsAnalyzing(true);
+    setResults([]);
+    setProgress(0);
+    setMessage({ type: 'info', text: 'Starting analysis... This may take a few minutes.' });
 
     try {
       const formData = new FormData();
-      files.forEach(file => {
-        formData.append('resumes', file);
-      });
+      files.forEach(file => formData.append('resumes', file));
       formData.append('jobDescription', jobDescription);
 
-      const response = await fetch('/api/process-resumes', {
+      const response = await fetch('/api/analyze', {
         method: 'POST',
-        body: formData,
+        body: formData
       });
 
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'resume_analysis.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        setMessage('Analysis complete! Excel file downloaded.');
-        setFiles([]);
-      } else {
+      if (!response.ok) {
         const errorData = await response.json();
-        setMessage(`Error: ${errorData.error || 'Failed to process resumes'}`);
+        throw new Error(errorData.message || 'Analysis failed');
       }
+
+      const data = await response.json();
+      setResults(data.results || []);
+      setMessage({
+        type: 'success',
+        text: `Analysis complete! Processed ${data.summary?.successful || 0} resumes successfully.`
+      });
+
     } catch (error) {
-      console.error('Error processing resumes:', error);
-      setMessage('Error processing resumes. Please try again.');
+      console.error('Analysis error:', error);
+      setMessage({
+        type: 'error',
+        text: `Analysis failed: ${error.message}. Please check your setup and try again.`
+      });
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const exportAIResults = () => {
-    if (aiResults.length === 0) return;
-
-    const csvContent = [
-      'File Name,Match %,Matching Skills,Missing Skills,Recommendation',
-      ...aiResults.map(result => 
-        `"${result.fileName}",${result.matchPercentage},"${result.matchingSkills?.join(', ') || ''}","${result.missingSkills?.join(', ') || ''}","${result.recommendation || ''}"`
-      )
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ai_resume_analysis.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'ats':
-        return (
-          <div className="space-y-6">
-            <Header />
-            <JobDescription 
-              jobDescription={jobDescription}
-              setJobDescription={setJobDescription}
-              onUpdate={updateJobDescription}
-            />
-            <FileUpload 
-              files={files}
-              onFileChange={handleFileChange}
-            />
-
-            {/* Processing Buttons */}
-            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Processing Options</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
-                  onClick={analyzeWithAI}
-                  disabled={aiLoading || files.length === 0}
-                  className="flex items-center justify-center px-6 py-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="mr-2">🤖</span>
-                  {aiLoading ? `AI Processing... (${analysisProgress.current}/${analysisProgress.total})` : 'AI Analysis with Gemini'}
-                </button>
-
-                <ProcessButton 
-                  loading={loading}
-                  filesCount={files.length}
-                  onProcess={processResumes}
-                />
-              </div>
-            </div>
-
-            <Message message={message} />
-
-            <AIAnalysis 
-              results={aiResults}
-              loading={aiLoading}
-              onExportResults={exportAIResults}
-            />
-
-            <InfoSection />
-          </div>
-        );
-      default:
-        return <Dashboard />;
+      setIsAnalyzing(false);
+      setProgress(0);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-purple-700">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+      {/* Enhanced Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-96 h-96 bg-gradient-to-br from-blue-400/8 to-purple-600/8 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-10 w-80 h-80 bg-gradient-to-br from-pink-400/8 to-red-600/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-gradient-to-br from-green-400/8 to-cyan-600/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      </div>
+
       <Navbar />
 
-      {/* Tab Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="bg-white bg-opacity-95 rounded-xl p-2 mb-6 shadow-lg backdrop-blur-sm">
-          <div className="flex space-x-1">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex-1 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                activeTab === 'dashboard' 
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              📊 Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('ats')}
-              className={`flex-1 px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
-                activeTab === 'ats' 
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              🎯 ATS Processing
-            </button>
+      <div className="relative z-10 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pt-2 pb-6">
+        {/* Hero Section */}
+        <div className="text-center mb-8">
+          <div className="animate-fade-in-up">
+            <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              🎯 Resume Analyzer
+            </h1>
+            <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto font-light leading-relaxed">
+              Upload resumes and analyze them against job descriptions with AI-powered matching
+            </p>
+          </div>
+        </div>
+
+        {/* Message Display */}
+        {message && (
+          <div className="mb-8">
+            <Message message={message} onClose={() => setMessage(null)} />
+          </div>
+        )}
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+          {/* Left Column - Upload & Job Description */}
+          <div className="space-y-8">
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <FileUpload files={files} onFileChange={handleFileChange} />
+            </div>
+            
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <JobDescription value={jobDescription} onChange={handleJobDescriptionChange} />
+            </div>
+          </div>
+
+          {/* Right Column - Process & Info */}
+          <div className="space-y-8">
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <ProcessButton 
+                onProcess={handleProcess} 
+                isAnalyzing={isAnalyzing}
+                disabled={files.length === 0 || !jobDescription.trim()}
+                filesCount={files.length}
+                progress={progress}
+              />
+            </div>
+
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <InfoSection />
+            </div>
+          </div>
+        </div>
+
+        {/* Analysis Results */}
+        {(results.length > 0 || isAnalyzing) && (
+          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 animate-fade-in-up">
+            <AIAnalysis results={results} isAnalyzing={isAnalyzing} />
+          </div>
+        )}
+
+        {/* Feature Highlights */}
+        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className="text-5xl mb-4">🤖</div>
+            <h3 className="text-xl font-bold text-white mb-3">AI-Powered Analysis</h3>
+            <p className="text-gray-400 text-sm">Advanced machine learning algorithms analyze resume content and match skills</p>
+          </div>
+          
+          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className="text-5xl mb-4">⚡</div>
+            <h3 className="text-xl font-bold text-white mb-3">Lightning Fast</h3>
+            <p className="text-gray-400 text-sm">Process multiple resumes in seconds with optimized batch processing</p>
+          </div>
+          
+          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+            <div className="text-5xl mb-4">📊</div>
+            <h3 className="text-xl font-bold text-white mb-3">Detailed Insights</h3>
+            <p className="text-gray-400 text-sm">Get comprehensive match scores and detailed skill analysis reports</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        {renderContent()}
-      </div>
-
       <Footer />
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out;
+        }
+
+        .bg-grid-pattern {
+          background-image: 
+            linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+          background-size: 50px 50px;
+        }
+      `}</style>
     </div>
   );
 }

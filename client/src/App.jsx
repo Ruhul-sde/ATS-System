@@ -1,7 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ATSPage from './pages/ATSPage';
 import DashboardPage from './pages/DashboardPage';
+import ATSPage from './pages/ATSPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import JobsPage from './pages/JobsPage';
+import CandidatesPage from './pages/CandidatesPage';
 import './App.css';
 
 // Error Boundary Component
@@ -22,17 +25,18 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-red-700 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-8 shadow-lg max-w-md mx-4">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h2>
-            <p className="text-gray-600 mb-4">
-              The application encountered an error. Please refresh the page to try again.
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+          <div className="glass-card p-8 max-w-md mx-auto text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold text-white mb-4">Oops! Something went wrong</h2>
+            <p className="text-gray-300 mb-6">
+              The application encountered an unexpected error. Don't worry, we can fix this!
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              className="btn-primary w-full"
             >
-              Refresh Page
+              🔄 Refresh Application
             </button>
           </div>
         </div>
@@ -48,10 +52,15 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/ats" element={<ATSPage />} />
-        </Routes>
+        <div className="app-container">
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/ats" element={<ATSPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/candidates" element={<CandidatesPage />} />
+          </Routes>
+        </div>
       </Router>
     </ErrorBoundary>
   );
