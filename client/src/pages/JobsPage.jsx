@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -7,69 +8,76 @@ export default function JobsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      title: 'Senior React Developer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Full-time',
-      status: 'active',
-      applications: 45,
-      views: 234,
-      posted: '2024-01-15',
-      salary: '$120k - $160k',
-      urgency: 'high',
-      description: 'Looking for an experienced React developer to join our growing team...',
-      requirements: ['5+ years React', 'TypeScript', 'Next.js', 'Team Leadership']
-    },
-    {
-      id: 2,
-      title: 'Product Manager',
-      department: 'Product',
-      location: 'San Francisco, CA',
-      type: 'Full-time',
-      status: 'active',
-      applications: 89,
-      views: 567,
-      posted: '2024-01-10',
-      salary: '$140k - $180k',
-      urgency: 'medium',
-      description: 'Seeking a strategic product manager to drive our product roadmap...',
-      requirements: ['3+ years PM experience', 'Agile/Scrum', 'Data Analysis', 'Stakeholder Management']
-    },
-    {
-      id: 3,
-      title: 'UX Designer',
-      department: 'Design',
-      location: 'New York, NY',
-      type: 'Full-time',
-      status: 'paused',
-      applications: 67,
-      views: 423,
-      posted: '2024-01-08',
-      salary: '$90k - $120k',
-      urgency: 'low',
-      description: 'Creative UX designer to enhance our user experience...',
-      requirements: ['Portfolio required', 'Figma', 'User Research', 'Prototyping']
-    },
-    {
-      id: 4,
-      title: 'DevOps Engineer',
-      department: 'Engineering',
-      location: 'Remote',
-      type: 'Contract',
-      status: 'active',
-      applications: 23,
-      views: 156,
-      posted: '2024-01-20',
-      salary: '$110k - $140k',
-      urgency: 'high',
-      description: 'DevOps engineer to manage our cloud infrastructure...',
-      requirements: ['AWS/Azure', 'Kubernetes', 'CI/CD', 'Terraform']
+  useEffect(() => {
+    fetchJobs();
+  }, [activeTab]);
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/jobs?status=${activeTab}`);
+      const data = await response.json();
+      if (data.success) {
+        setJobs(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const handleCreateJob = async (jobData) => {
+    try {
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(jobData)
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchJobs(); // Refresh the list
+        setShowCreateModal(false);
+      }
+    } catch (error) {
+      console.error('Error creating job:', error);
+    }
+  };
+
+  const handleStatusChange = async (jobId, newStatus) => {
+    try {
+      const response = await fetch(`/api/jobs/${jobId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        fetchJobs(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error updating job status:', error);
+    }
+  };
+
+  const handleViewJob = async (jobId) => {
+    try {
+      await fetch(`/api/jobs/${jobId}/views`, {
+        method: 'PUT'
+      });
+    } catch (error) {
+      console.error('Error updating views:', error);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -100,10 +108,181 @@ export default function JobsPage() {
     }
   };
 
+  const formatSalary = (salaryRange) => {
+    if (salaryRange?.min && salaryRange?.max) {
+      return `$${salaryRange.min}k - $${salaryRange.max}k`;
+    } else if (salaryRange?.min) {
+      return `$${salaryRange.min}k+`;
+    } else if (salaryRange?.max) {
+      return `Up to $${salaryRange.max}k`;
+    }
+    return 'Competitive';
+  };
+
   const filteredJobs = jobs.filter(job => 
-    job.status === activeTab &&
     job.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const CreateJobModal = () => {
+    const [formData, setFormData] = useState({
+      title: '',
+      description: '',
+      department: '',
+      experienceLevel: 'mid',
+      skills: '',
+      location: '',
+      type: 'Full-time',
+      urgency: 'medium',
+      salaryRange: { min: '', max: '' }
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      const jobData = {
+        ...formData,
+        skills: formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill),
+        salaryRange: {
+          min: formData.salaryRange.min ? parseInt(formData.salaryRange.min) : undefined,
+          max: formData.salaryRange.max ? parseInt(formData.salaryRange.max) : undefined
+        }
+      };
+      handleCreateJob(jobData);
+    };
+
+    const handleInputChange = (e) => {
+      const { name, value } = e.target;
+      if (name.includes('salaryRange')) {
+        const field = name.split('.')[1];
+        setFormData(prev => ({
+          ...prev,
+          salaryRange: { ...prev.salaryRange, [field]: value }
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
+    };
+
+    if (!showCreateModal) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h2 className="text-3xl font-bold text-white mb-6">Create New Job</h2>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                name="title"
+                placeholder="Job Title"
+                value={formData.title}
+                onChange={handleInputChange}
+                required
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              />
+              <input
+                type="text"
+                name="department"
+                placeholder="Department"
+                value={formData.department}
+                onChange={handleInputChange}
+                required
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              />
+              <select
+                name="experienceLevel"
+                value={formData.experienceLevel}
+                onChange={handleInputChange}
+                required
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              >
+                <option value="entry">Entry Level</option>
+                <option value="mid">Mid Level</option>
+                <option value="senior">Senior Level</option>
+                <option value="lead">Lead Level</option>
+              </select>
+              <input
+                type="text"
+                name="location"
+                placeholder="Location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              />
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleInputChange}
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              >
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+              <select
+                name="urgency"
+                value={formData.urgency}
+                onChange={handleInputChange}
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              >
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+              </select>
+              <input
+                type="number"
+                name="salaryRange.min"
+                placeholder="Min Salary (k)"
+                value={formData.salaryRange.min}
+                onChange={handleInputChange}
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              />
+              <input
+                type="number"
+                name="salaryRange.max"
+                placeholder="Max Salary (k)"
+                value={formData.salaryRange.max}
+                onChange={handleInputChange}
+                className="p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              />
+            </div>
+            <input
+              type="text"
+              name="skills"
+              placeholder="Skills (comma separated)"
+              value={formData.skills}
+              onChange={handleInputChange}
+              className="w-full p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+            />
+            <textarea
+              name="description"
+              placeholder="Job Description"
+              value={formData.description}
+              onChange={handleInputChange}
+              required
+              rows={4}
+              className="w-full p-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+            />
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+              >
+                Create Job
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
 
   const JobCard = ({ job }) => (
     <div className={`group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 hover:border-white/40 transition-all duration-500 hover:scale-105 border-l-4 ${getUrgencyColor(job.urgency)}`}>
@@ -119,7 +298,7 @@ export default function JobsPage() {
               </span>
               <span className="flex items-center space-x-1">
                 <span>📍</span>
-                <span>{job.location}</span>
+                <span>{job.location || 'Remote'}</span>
               </span>
               <span className="flex items-center space-x-1">
                 <span>⏰</span>
@@ -145,16 +324,18 @@ export default function JobsPage() {
         <p className="text-gray-300 text-lg leading-relaxed">{job.description}</p>
       </div>
 
-      <div className="mb-6">
-        <h4 className="text-white font-semibold mb-3">Key Requirements:</h4>
-        <div className="flex flex-wrap gap-2">
-          {job.requirements.map((req, index) => (
-            <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-lg border border-purple-500/30">
-              {req}
-            </span>
-          ))}
+      {job.skills && job.skills.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-white font-semibold mb-3">Key Requirements:</h4>
+          <div className="flex flex-wrap gap-2">
+            {job.skills.map((skill, index) => (
+              <span key={index} className="px-3 py-1 bg-purple-500/20 text-purple-300 text-sm rounded-lg border border-purple-500/30">
+                {skill}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         <div className="text-center">
@@ -166,20 +347,26 @@ export default function JobsPage() {
           <div className="text-sm text-gray-400">Views</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-purple-400">{job.salary}</div>
+          <div className="text-2xl font-bold text-purple-400">{formatSalary(job.salaryRange)}</div>
           <div className="text-sm text-gray-400">Salary</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-yellow-400">{new Date(job.posted).toLocaleDateString()}</div>
+          <div className="text-2xl font-bold text-yellow-400">{new Date(job.createdAt).toLocaleDateString()}</div>
           <div className="text-sm text-gray-400">Posted</div>
         </div>
       </div>
 
       <div className="flex space-x-4">
-        <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105">
+        <button 
+          onClick={() => handleViewJob(job._id)}
+          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+        >
           View Applications
         </button>
-        <button className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105">
+        <button 
+          onClick={() => setSelectedJob(job)}
+          className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+        >
           Edit Job
         </button>
       </div>
@@ -258,12 +445,12 @@ export default function JobsPage() {
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 text-center">
             <div className="text-4xl mb-4">👥</div>
-            <div className="text-3xl font-bold text-green-400 mb-2">{jobs.reduce((sum, job) => sum + job.applications, 0)}</div>
+            <div className="text-3xl font-bold text-green-400 mb-2">{jobs.reduce((sum, job) => sum + (job.applications || 0), 0)}</div>
             <div className="text-gray-300">Total Applications</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 text-center">
             <div className="text-4xl mb-4">👀</div>
-            <div className="text-3xl font-bold text-purple-400 mb-2">{jobs.reduce((sum, job) => sum + job.views, 0)}</div>
+            <div className="text-3xl font-bold text-purple-400 mb-2">{jobs.reduce((sum, job) => sum + (job.views || 0), 0)}</div>
             <div className="text-gray-300">Total Views</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 text-center">
@@ -275,9 +462,14 @@ export default function JobsPage() {
 
         {/* Jobs List */}
         <div className="space-y-8">
-          {filteredJobs.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="text-8xl mb-6">⏳</div>
+              <h3 className="text-3xl font-bold text-gray-400 mb-4">Loading jobs...</h3>
+            </div>
+          ) : filteredJobs.length > 0 ? (
             filteredJobs.map((job) => (
-              <JobCard key={job.id} job={job} />
+              <JobCard key={job._id} job={job} />
             ))
           ) : (
             <div className="text-center py-16">
@@ -289,6 +481,7 @@ export default function JobsPage() {
         </div>
       </div>
 
+      <CreateJobModal />
       <Footer />
     </div>
   );

@@ -33,6 +33,29 @@ const jobRoleSchema = new mongoose.Schema({
     min: Number,
     max: Number
   },
+  type: {
+    type: String,
+    enum: ['Full-time', 'Part-time', 'Contract', 'Internship'],
+    default: 'Full-time'
+  },
+  status: {
+    type: String,
+    enum: ['active', 'paused', 'closed'],
+    default: 'active'
+  },
+  urgency: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
+  applications: {
+    type: Number,
+    default: 0
+  },
+  views: {
+    type: Number,
+    default: 0
+  },
   isActive: {
     type: Boolean,
     default: true
