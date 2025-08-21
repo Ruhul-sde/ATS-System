@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import mongoose from 'mongoose';
 import { fileURLToPath } from 'url';
-import pdf from 'pdf-parse';
+// pdf-parse will be imported dynamically when needed
 import { GeminiService } from './services/geminiService.js';
 import { config } from './config/environment.js';
 import connectDB from './config/database.js';
@@ -517,7 +517,8 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
       
       try {
         if (file.mimetype === 'application/pdf') {
-          // Parse PDF content
+          // Parse PDF content - import dynamically to avoid initialization issues
+          const pdf = (await import('pdf-parse')).default;
           const pdfData = await pdf(file.buffer);
           text = pdfData.text;
         } else {
@@ -628,8 +629,8 @@ app.use((req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, 'localhost', () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Environment: ${config.app.environment}`);
   console.log(`🤖 Gemini API: ${GeminiService.getApiKeyStatus().configured ? '✅ Configured' : '❌ Not configured'}`);
 });
