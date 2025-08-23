@@ -6,51 +6,143 @@ import AIAnalysis from '../components/AIAnalysis';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
-// Mock data for demonstration
+// Enhanced Mock ATS Analysis Results for demonstration
 const mockAnalysisResults = [
   {
     fileName: "Sarah_Chen_Resume.pdf",
     matchPercentage: 92,
-    matchingSkills: ["React", "TypeScript", "Node.js", "AWS", "GraphQL", "Docker"],
-    missingSkills: ["Kubernetes", "Jenkins", "Terraform"],
+    matchingSkills: ["React", "TypeScript", "Node.js", "AWS", "GraphQL", "Docker", "JavaScript", "Git", "Agile"],
+    missingSkills: ["Kubernetes", "Jenkins", "Terraform", "CI/CD", "Microservices"],
     experienceMatch: "senior",
     educationRelevance: "high",
-    strengths: ["Strong technical leadership", "Full-stack expertise", "Cloud architecture experience"],
-    weaknesses: ["Limited DevOps experience", "No mention of testing frameworks"],
-    recommendations: ["Consider DevOps training", "Highlight any testing experience", "Emphasize leadership projects"],
-    keywordMatches: 15,
-    overallAssessment: "Excellent candidate with strong technical skills and leadership experience. Perfect fit for senior developer role.",
+    strengths: [
+      "Strong technical leadership with 5+ years experience",
+      "Full-stack expertise across modern tech stack",
+      "Cloud architecture experience with AWS",
+      "Proven track record in scalable applications",
+      "Excellent communication and mentoring skills"
+    ],
+    weaknesses: [
+      "Limited DevOps experience with container orchestration",
+      "No mention of testing frameworks or TDD practices",
+      "Missing CI/CD pipeline experience",
+      "Could benefit from more system design examples"
+    ],
+    recommendations: [
+      "Consider DevOps certification (AWS/K8s)",
+      "Highlight any testing experience you have",
+      "Emphasize leadership and mentoring projects",
+      "Add examples of system architecture decisions",
+      "Include metrics on performance improvements"
+    ],
+    keywordMatches: 18,
+    totalKeywords: 25,
+    overallAssessment: "Excellent candidate with strong technical skills and leadership experience. Perfect fit for senior developer role with minimal gaps.",
     interviewReadiness: "ready",
+    improvementAreas: [
+      "DevOps and Infrastructure",
+      "Testing Methodologies",
+      "System Design Documentation"
+    ],
+    atsScore: {
+      technical: 95,
+      experience: 92,
+      keywords: 72,
+      education: 88,
+      overall: 92
+    },
     status: "success"
   },
   {
     fileName: "Michael_Rodriguez_Resume.pdf",
     matchPercentage: 78,
-    matchingSkills: ["JavaScript", "React", "Node.js", "MongoDB"],
-    missingSkills: ["TypeScript", "AWS", "GraphQL", "Docker", "Testing"],
+    matchingSkills: ["JavaScript", "React", "Node.js", "MongoDB", "HTML", "CSS", "Git"],
+    missingSkills: ["TypeScript", "AWS", "GraphQL", "Docker", "Testing", "Redis", "PostgreSQL"],
     experienceMatch: "mid",
     educationRelevance: "medium",
-    strengths: ["Good JavaScript fundamentals", "MERN stack experience", "Quick learner"],
-    weaknesses: ["Limited cloud experience", "No TypeScript background", "Minimal testing knowledge"],
-    recommendations: ["Learn TypeScript", "Gain cloud platform experience", "Practice testing frameworks"],
-    keywordMatches: 8,
-    overallAssessment: "Solid mid-level candidate with room for growth. Good cultural fit with some skill gaps.",
+    strengths: [
+      "Good JavaScript fundamentals and ES6+ knowledge",
+      "MERN stack experience with 2+ projects",
+      "Quick learner with demonstrated growth",
+      "Strong problem-solving abilities",
+      "Good team collaboration skills"
+    ],
+    weaknesses: [
+      "Limited cloud platform experience",
+      "No TypeScript background or static typing",
+      "Minimal testing knowledge and coverage",
+      "Missing experience with scalable architectures",
+      "Could use more database variety exposure"
+    ],
+    recommendations: [
+      "Learn TypeScript to improve code quality",
+      "Gain hands-on AWS or cloud platform experience",
+      "Practice testing frameworks (Jest, React Testing Library)",
+      "Build projects showcasing scalable architecture",
+      "Explore different database technologies"
+    ],
+    keywordMatches: 10,
+    totalKeywords: 25,
+    overallAssessment: "Solid mid-level candidate with room for growth. Good cultural fit with some skill gaps that can be addressed.",
     interviewReadiness: "needs-preparation",
+    improvementAreas: [
+      "Cloud Technologies",
+      "Testing & Quality Assurance",
+      "Advanced JavaScript/TypeScript",
+      "Database Design"
+    ],
+    atsScore: {
+      technical: 75,
+      experience: 70,
+      keywords: 40,
+      education: 75,
+      overall: 78
+    },
     status: "success"
   },
   {
     fileName: "Alice_Johnson_Resume.pdf",
     matchPercentage: 85,
-    matchingSkills: ["React", "TypeScript", "Python", "AWS", "Docker", "Jest"],
-    missingSkills: ["GraphQL", "Microservices", "Kubernetes"],
+    matchingSkills: ["React", "TypeScript", "Python", "AWS", "Docker", "Jest", "PostgreSQL", "Redis", "Git"],
+    missingSkills: ["GraphQL", "Microservices", "Kubernetes", "Jenkins"],
     experienceMatch: "senior",
     educationRelevance: "high",
-    strengths: ["Excellent full-stack skills", "Strong testing background", "Cloud-native development"],
-    weaknesses: ["Limited microservices experience", "No GraphQL exposure"],
-    recommendations: ["Explore GraphQL implementation", "Study microservices architecture", "Highlight system design experience"],
-    keywordMatches: 12,
-    overallAssessment: "Strong candidate with excellent technical foundation. Would excel in the role with minimal onboarding.",
+    strengths: [
+      "Excellent full-stack skills with modern technologies",
+      "Strong testing background with comprehensive coverage",
+      "Cloud-native development experience",
+      "Multi-language proficiency (JS/TS/Python)",
+      "Good understanding of database optimization"
+    ],
+    weaknesses: [
+      "Limited microservices architecture experience",
+      "No GraphQL API development exposure",
+      "Missing container orchestration skills",
+      "Could benefit from more leadership examples"
+    ],
+    recommendations: [
+      "Explore GraphQL implementation in existing projects",
+      "Study microservices architecture patterns",
+      "Highlight system design and leadership experience",
+      "Consider Kubernetes certification",
+      "Showcase performance optimization achievements"
+    ],
+    keywordMatches: 15,
+    totalKeywords: 25,
+    overallAssessment: "Strong candidate with excellent technical foundation. Would excel in the role with minimal onboarding required.",
     interviewReadiness: "ready",
+    improvementAreas: [
+      "Microservices Architecture",
+      "API Design (GraphQL)",
+      "Container Orchestration"
+    ],
+    atsScore: {
+      technical: 88,
+      experience: 85,
+      keywords: 60,
+      education: 90,
+      overall: 85
+    },
     status: "success"
   }
 ];
