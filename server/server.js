@@ -9,20 +9,42 @@ import { GeminiService } from './services/geminiService.js';
 import { config } from './config/environment.js';
 import connectDB from './config/database.js';
 import JobRole from './models/JobRole.js';
+import User from './models/User.js';
+import JobApplication from './models/JobApplication.js';
+import authRoutes from './routes/auth.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Connect to MongoDB
 connectDB();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://0.0.0.0:5173', 'https://*.replit.dev', 'https://*.replit.co'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:5000',
+      'http://0.0.0.0:5000',
+      'http://localhost:5173',
+      'http://0.0.0.0:5173'
+    ];
+    
+    // Check for replit domains
+    const replitRegex = /^https:\/\/[a-zA-Z0-9-]+\.replit\.(dev|co)$/;
+    
+    if (allowedOrigins.includes(origin) || replitRegex.test(origin)) {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -45,6 +67,7 @@ const upload = multer({
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
