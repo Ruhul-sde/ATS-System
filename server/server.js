@@ -12,6 +12,7 @@ import JobRole from './models/JobRole.js';
 import User from './models/User.js';
 import JobApplication from './models/JobApplication.js';
 import authRoutes from './routes/auth.js';
+import jobSeekerRoutes from './routes/jobSeeker.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,21 +29,21 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const allowedOrigins = [
       'http://localhost:5000',
       'http://0.0.0.0:5000',
       'http://localhost:5173',
       'http://0.0.0.0:5173'
     ];
-    
+
     // Check for replit domains
     const replitRegex = /^https:\/\/[a-zA-Z0-9-]+\.replit\.(dev|co)$/;
-    
+
     if (allowedOrigins.includes(origin) || replitRegex.test(origin)) {
       return callback(null, true);
     }
-    
+
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
@@ -66,8 +67,12 @@ const upload = multer({
   }
 });
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/job-seeker', jobSeekerRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -130,7 +135,7 @@ app.get('/api/jobs', async (req, res) => {
     if (status) {
       filter.status = status;
     }
-    
+
     const jobs = await JobRole.find(filter).sort({ createdAt: -1 });
     res.json({
       success: true,
@@ -207,7 +212,7 @@ app.post('/api/jobs', async (req, res) => {
 app.put('/api/jobs/:id/status', async (req, res) => {
   try {
     const { status } = req.body;
-    
+
     if (!['active', 'paused', 'closed'].includes(status)) {
       return res.status(400).json({
         success: false,
@@ -502,10 +507,10 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
   console.log('Resume analysis request received');
   console.log('Files:', req.files?.length || 0);
   console.log('Job description length:', req.body.jobDescription?.length || 0);
-  
+
   try {
     const { jobDescription } = req.body;
-    
+
     if (!req.files || req.files.length === 0) {
       console.log('Error: No files uploaded');
       return res.status(400).json({
@@ -523,7 +528,7 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
     }
 
     console.log(`Processing ${req.files.length} resumes...`);
-    
+
     // Validate Gemini service
     const serviceHealth = GeminiService.getServiceHealth();
     if (serviceHealth.status !== 'healthy') {
@@ -537,7 +542,7 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
     // Process uploaded files with proper PDF parsing
     const resumes = await Promise.all(req.files.map(async file => {
       let text = '';
-      
+
       try {
         if (file.mimetype === 'application/pdf') {
           // Parse PDF content - import dynamically to avoid initialization issues
@@ -548,7 +553,7 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
           // For other file types, use simple text extraction
           text = file.buffer.toString('utf-8');
         }
-        
+
         if (!text || text.trim() === '') {
           text = `Unable to extract text from ${file.originalname}. Please ensure the file contains readable text.`;
         }
@@ -556,7 +561,7 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
         console.error(`Error parsing ${file.originalname}:`, parseError);
         text = `Error extracting text from ${file.originalname}: ${parseError.message}`;
       }
-      
+
       return {
         fileName: file.originalname,
         text: text,
@@ -575,12 +580,12 @@ app.post('/api/analyze', upload.array('resumes'), async (req, res) => {
 
   } catch (error) {
     console.error('Resume analysis error:', error);
-    
+
     // Log stack trace for debugging
     if (error.stack) {
       console.error('Stack trace:', error.stack);
     }
-    
+
     res.status(500).json({
       success: false,
       message: error.message || 'Analysis failed',

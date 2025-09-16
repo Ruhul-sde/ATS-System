@@ -1,6 +1,6 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 
 const LoginForm = ({ onSuccess, switchToRegister }) => {
   const [formData, setFormData] = useState({
@@ -63,25 +63,65 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
     }
   };
 
+  const handleQuickLogin = (email, password) => {
+    setFormData({ email, password });
+    // Auto-submit after setting values
+    setTimeout(() => {
+      const submitEvent = { preventDefault: () => {} };
+      handleSubmit(submitEvent);
+    }, 100);
+  };
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+      <div className="bg-white/10 backdrop-blur-md shadow-xl rounded-2xl p-8 border border-white/20">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-          <p className="text-gray-600">Sign in to your account</p>
+          <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+          <p className="text-gray-300">Sign in to your account</p>
+        </div>
+
+        {/* Quick Login Buttons */}
+        <div className="mb-6 space-y-2">
+          <p className="text-sm text-gray-300 text-center mb-3">Quick Login:</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleQuickLogin('admin@test.com', 'admin123')}
+              className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-300 py-2 px-4 rounded-lg text-sm transition-all duration-200"
+              disabled={loading}
+            >
+              👑 Login as Recruiter/Admin
+            </button>
+            <button
+              onClick={() => handleQuickLogin('user@test.com', 'user123')}
+              className="w-full bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 text-green-300 py-2 px-4 rounded-lg text-sm transition-all duration-200"
+              disabled={loading}
+            >
+              👤 Login as Job Seeker
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/20"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-slate-900 text-gray-400">Or continue with</span>
+          </div>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Email Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Email Address
             </label>
             <div className="relative">
@@ -90,10 +130,10 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                   errors.email 
                     ? 'border-red-300 focus:border-red-500' 
-                    : 'border-gray-200 focus:border-primary-500'
+                    : 'border-white/20 focus:border-blue-500'
                 }`}
                 placeholder="Enter your email"
                 disabled={loading}
@@ -105,13 +145,13 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
               </div>
             </div>
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              <p className="mt-1 text-sm text-red-400">{errors.email}</p>
             )}
           </div>
 
           {/* Password Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Password
             </label>
             <div className="relative">
@@ -120,10 +160,10 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                   errors.password 
                     ? 'border-red-300 focus:border-red-500' 
-                    : 'border-gray-200 focus:border-primary-500'
+                    : 'border-white/20 focus:border-blue-500'
                 }`}
                 placeholder="Enter your password"
                 disabled={loading}
@@ -135,14 +175,14 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
               </div>
             </div>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              <p className="mt-1 text-sm text-red-400">{errors.password}</p>
             )}
           </div>
 
           {/* Submit Error */}
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-600">{errors.submit}</p>
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+              <p className="text-sm text-red-300">{errors.submit}</p>
             </div>
           )}
 
@@ -152,8 +192,8 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
             disabled={loading}
             className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 ${
               loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-primary-500 hover:bg-primary-600 hover:shadow-lg transform hover:-translate-y-0.5'
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:shadow-lg transform hover:-translate-y-0.5'
             }`}
           >
             {loading ? (
@@ -170,13 +210,13 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
           </button>
 
           {/* Switch to Register */}
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-gray-600">
+          <div className="text-center pt-4 border-t border-white/20">
+            <p className="text-gray-300">
               Don't have an account?{' '}
               <button
                 type="button"
                 onClick={switchToRegister}
-                className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
+                className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
               >
                 Create Account
               </button>

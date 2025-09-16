@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -21,7 +22,7 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -54,9 +55,7 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
       newErrors.password = 'Password must be at least 6 characters';
     }
 
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -66,13 +65,13 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const { confirmPassword, ...registrationData } = formData;
-      await register(registrationData);
+      const { confirmPassword, ...submitData } = formData;
+      await register(submitData);
       onSuccess && onSuccess();
     } catch (error) {
       setErrors({ 
@@ -85,24 +84,24 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+      <div className="bg-white/10 backdrop-blur-md shadow-xl rounded-2xl p-8 border border-white/20">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-secondary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h2>
-          <p className="text-gray-600">Join our talent management platform</p>
+          <h2 className="text-3xl font-bold text-white mb-2">Create Account</h2>
+          <p className="text-gray-300">Join our platform today</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Fields */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 First Name
               </label>
               <input
@@ -110,21 +109,20 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                   errors.firstName 
                     ? 'border-red-300 focus:border-red-500' 
-                    : 'border-gray-200 focus:border-secondary-500'
+                    : 'border-white/20 focus:border-blue-500'
                 }`}
                 placeholder="First name"
                 disabled={loading}
               />
               {errors.firstName && (
-                <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
               )}
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Last Name
               </label>
               <input
@@ -132,23 +130,23 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                   errors.lastName 
                     ? 'border-red-300 focus:border-red-500' 
-                    : 'border-gray-200 focus:border-secondary-500'
+                    : 'border-white/20 focus:border-blue-500'
                 }`}
                 placeholder="Last name"
                 disabled={loading}
               />
               {errors.lastName && (
-                <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>
+                <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
               )}
             </div>
           </div>
 
           {/* Email Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Email Address
             </label>
             <input
@@ -156,39 +154,39 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full px-3 py-2 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+              className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                 errors.email 
                   ? 'border-red-300 focus:border-red-500' 
-                  : 'border-gray-200 focus:border-secondary-500'
+                  : 'border-white/20 focus:border-blue-500'
               }`}
               placeholder="Enter your email"
               disabled={loading}
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              <p className="mt-1 text-sm text-red-400">{errors.email}</p>
             )}
           </div>
 
           {/* Role Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Account Type
             </label>
             <select
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 focus:border-secondary-500 focus:outline-none focus:ring-0 transition-colors duration-200"
+              className="w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white border-white/20 focus:border-blue-500 transition-colors duration-200 focus:outline-none focus:ring-0"
               disabled={loading}
             >
-              <option value="applicant">Job Seeker</option>
-              <option value="admin">Recruiter/HR Admin</option>
+              <option value="applicant" className="bg-gray-800 text-white">👤 Job Seeker</option>
+              <option value="admin" className="bg-gray-800 text-white">👑 Recruiter/Admin</option>
             </select>
           </div>
 
           {/* Password Fields */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Password
             </label>
             <input
@@ -196,21 +194,21 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`w-full px-3 py-2 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+              className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                 errors.password 
                   ? 'border-red-300 focus:border-red-500' 
-                  : 'border-gray-200 focus:border-secondary-500'
+                  : 'border-white/20 focus:border-blue-500'
               }`}
-              placeholder="Create a password"
+              placeholder="Enter your password"
               disabled={loading}
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+              <p className="mt-1 text-sm text-red-400">{errors.password}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Confirm Password
             </label>
             <input
@@ -218,23 +216,23 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className={`w-full px-3 py-2 rounded-lg border-2 transition-colors duration-200 focus:outline-none focus:ring-0 ${
+              className={`w-full px-4 py-3 rounded-lg border-2 bg-white/10 backdrop-blur-sm text-white placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-0 ${
                 errors.confirmPassword 
                   ? 'border-red-300 focus:border-red-500' 
-                  : 'border-gray-200 focus:border-secondary-500'
+                  : 'border-white/20 focus:border-blue-500'
               }`}
               placeholder="Confirm your password"
               disabled={loading}
             />
             {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
+              <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
             )}
           </div>
 
           {/* Submit Error */}
           {errors.submit && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-600">{errors.submit}</p>
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+              <p className="text-sm text-red-300">{errors.submit}</p>
             </div>
           )}
 
@@ -244,8 +242,8 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
             disabled={loading}
             className={`w-full py-3 px-4 rounded-lg font-medium text-white transition-all duration-200 ${
               loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-secondary-500 hover:bg-secondary-600 hover:shadow-lg transform hover:-translate-y-0.5'
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 hover:shadow-lg transform hover:-translate-y-0.5'
             }`}
           >
             {loading ? (
@@ -262,13 +260,13 @@ const RegisterForm = ({ onSuccess, switchToLogin }) => {
           </button>
 
           {/* Switch to Login */}
-          <div className="text-center pt-4 border-t border-gray-200">
-            <p className="text-gray-600">
+          <div className="text-center pt-4 border-t border-white/20">
+            <p className="text-gray-300">
               Already have an account?{' '}
               <button
                 type="button"
                 onClick={switchToLogin}
-                className="text-secondary-500 hover:text-secondary-600 font-medium transition-colors duration-200"
+                className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200"
               >
                 Sign In
               </button>

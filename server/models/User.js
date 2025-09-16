@@ -66,12 +66,16 @@ const userSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['pending', 'reviewed', 'shortlisted', 'rejected', 'hired'],
+      enum: ['pending', 'reviewing', 'shortlisted', 'rejected', 'hired'],
       default: 'pending'
     },
     coverLetter: String,
     resumeSnapshot: String // Store resume content at time of application
   }],
+  profileViews: {
+    type: Number,
+    default: 0
+  },
   refreshToken: String
 }, {
   timestamps: true
@@ -85,7 +89,7 @@ userSchema.index({ 'applications.jobId': 1 });
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);

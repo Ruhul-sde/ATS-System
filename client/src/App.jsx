@@ -1,11 +1,15 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
+import JobSeekerDashboard from './pages/JobSeekerDashboard';
+import ProfilePage from './pages/ProfilePage';
 import ATSPage from './pages/ATSPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import JobsPage from './pages/JobsPage';
+import JobSeekerJobsPage from './pages/JobSeekerJobsPage';
 import CandidatesPage from './pages/CandidatesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -52,14 +56,14 @@ class ErrorBoundary extends React.Component {
 
 // App Content Component (inside AuthProvider)
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading ATS Pro...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading ATS Pro...</p>
         </div>
       </div>
     );
@@ -74,26 +78,31 @@ function AppContent() {
       <Routes>
         <Route path="/" element={
           <ProtectedRoute>
-            <DashboardPage />
+            {user?.role === 'admin' ? <DashboardPage /> : <JobSeekerDashboard />}
           </ProtectedRoute>
         } />
         <Route path="/ats" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <ATSPage />
           </ProtectedRoute>
         } />
         <Route path="/analytics" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AnalyticsPage />
           </ProtectedRoute>
         } />
         <Route path="/jobs" element={
           <ProtectedRoute>
-            <JobsPage />
+            {user?.role === 'admin' ? <JobsPage /> : <JobSeekerJobsPage />}
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         } />
         <Route path="/candidates" element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <CandidatesPage />
           </ProtectedRoute>
         } />
