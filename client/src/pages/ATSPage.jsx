@@ -151,33 +151,99 @@ export default function ATSPage() {
   const [files, setFiles] = useState([]);
   const [jobDescription, setJobDescription] = useState('');
   const [results, setResults] = useState([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [message, setMessage] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [analysisStats, setAnalysisStats] = useState(null);
 
   const handleFileChange = (event) => {
     const selectedFiles = Array.from(event.target.files);
     setFiles(selectedFiles);
+    setMessage({ type: 'success', text: `${selectedFiles.length} file(s) selected successfully!` });
     
-    // Show dummy results immediately when files are uploaded
-    if (selectedFiles.length > 0) {
-      const dummyResults = selectedFiles.map((file, index) => {
-        const mockData = mockAnalysisResults[index % mockAnalysisResults.length];
-        return {
-          ...mockData,
-          fileName: file.name,
-          fileSize: file.size
-        };
-      });
-      
-      setResults(dummyResults);
-      setMessage({
-        type: 'success',
-        text: `✨ AI Analysis Complete! Processed ${dummyResults.length} resumes instantly (Demo Mode)`
-      });
-    }
+    // Clear previous results when new files are selected
+    setResults([]);
+    setAnalysisStats(null);
   };
 
   const handleJobDescriptionChange = (value) => {
     setJobDescription(value);
+  };
+
+  const handleAnalyze = async () => {
+    if (files.length === 0) {
+      setMessage({ type: 'error', text: 'Please select at least one resume file.' });
+      return;
+    }
+
+    if (!jobDescription.trim()) {
+      setMessage({ type: 'error', text: 'Please enter a job description.' });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setResults([]);
+    setProgress(0);
+    setMessage({ type: 'info', text: 'Starting AI analysis... This may take a few minutes.' });
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add all files to FormData
+      files.forEach((file) => {
+        formData.append('resumes', file);
+      });
+      
+      // Add job description
+      formData.append('jobDescription', jobDescription);
+
+      console.log(`Uploading ${files.length} files for analysis...`);
+
+      // Call the backend API
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || data.error || 'Analysis failed');
+      }
+
+      // Set the results from API
+      setResults(data.results || []);
+      setAnalysisStats(data.summary);
+      setMessage({
+        type: 'success',
+        text: `✨ Analysis complete! Processed ${data.results?.length || 0} resumes successfully.`
+      });
+
+    } catch (error) {
+      console.error('Analysis error:', error);
+      
+      // Handle network errors specifically
+      if (error.message.includes('fetch')) {
+        setMessage({
+          type: 'error',
+          text: 'Cannot connect to server. Please make sure the server is running.'
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          text: `Analysis failed: ${error.message}`
+        });
+      }
+    } finally {
+      setIsAnalyzing(false);
+      setProgress(0);
+    }
   };
 
   return (
@@ -230,53 +296,123 @@ export default function ATSPage() {
             </div>
           </div>
 
-          {/* Right Column - Info */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-            <div className="space-y-6">
-              <div className="flex items-center space-x-3">
-                <div className="text-3xl">ℹ️</div>
-                <div>
-                  <h2 className="text-2xl font-bold text-white">How It Works</h2>
-                  <p className="text-gray-400">Simple 3-step process</p>
-                </div>
+          {/* Right Column - Analysis & Info */}
+          <div className="space-y-8">
+            {/* Analysis Button */}
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <div className="text-center">
+                <div className="text-4xl mb-4">🚀</div>
+                <h3 className="text-2xl font-bold text-white mb-4">Ready to Analyze?</h3>
+                <p className="text-gray-400 mb-6">
+                  {files.length > 0 && jobDescription.trim() 
+                    ? `${files.length} resumes ready for AI analysis`
+                    : 'Upload resumes and add job description to begin'
+                  }
+                </p>
+                
+                <button
+                  onClick={handleAnalyze}
+                  disabled={files.length === 0 || !jobDescription.trim() || isAnalyzing}
+                  className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 ${
+                    files.length === 0 || !jobDescription.trim() || isAnalyzing
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white hover:scale-105 shadow-lg hover:shadow-xl'
+                  }`}
+                >
+                  {isAnalyzing ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin text-2xl">🤖</div>
+                      <span>Analyzing Resumes...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>🎯</span>
+                      <span>Start AI Analysis</span>
+                    </div>
+                  )}
+                </button>
+
+                {isAnalyzing && (
+                  <div className="mt-4">
+                    <div className="bg-white/10 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-cyan-400 to-purple-500 h-2 rounded-full transition-all duration-500"
+                        style={{width: `${progress}%`}}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-400 mt-2">Processing {files.length} resumes with AI...</p>
+                  </div>
+                )}
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl">
-                  <div className="text-2xl">1️⃣</div>
+            {/* How It Works */}
+            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+              <div className="space-y-6">
+                <div className="flex items-center space-x-3">
+                  <div className="text-3xl">🔬</div>
                   <div>
-                    <h3 className="text-white font-semibold">Upload Resumes</h3>
-                    <p className="text-gray-400 text-sm">Upload PDF or Word documents</p>
+                    <h2 className="text-2xl font-bold text-white">Advanced ATS Analysis</h2>
+                    <p className="text-gray-400">AI-powered candidate matching</p>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl">
-                  <div className="text-2xl">2️⃣</div>
-                  <div>
-                    <h3 className="text-white font-semibold">Add Job Description</h3>
-                    <p className="text-gray-400 text-sm">Paste or type the job requirements</p>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div className="text-2xl">🎯</div>
+                    <div>
+                      <h3 className="text-white font-semibold">Keyword Matching</h3>
+                      <p className="text-gray-400 text-sm">Intelligent keyword analysis with synonyms and semantic matching</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div className="text-2xl">📊</div>
+                    <div>
+                      <h3 className="text-white font-semibold">ATS Scoring</h3>
+                      <p className="text-gray-400 text-sm">Comprehensive scoring across multiple criteria</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div className="text-2xl">🧠</div>
+                    <div>
+                      <h3 className="text-white font-semibold">AI Recommendations</h3>
+                      <p className="text-gray-400 text-sm">Detailed hiring recommendations and interview questions</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl">
-                  <div className="text-2xl">3️⃣</div>
-                  <div>
-                    <h3 className="text-white font-semibold">Get Instant Results</h3>
-                    <p className="text-gray-400 text-sm">View detailed AI analysis immediately</p>
+                {files.length > 0 && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-400 text-xl">📁</span>
+                        <span className="text-green-300 font-medium">
+                          {files.length} resume{files.length !== 1 ? 's' : ''} selected
+                        </span>
+                      </div>
+                      <div className="text-green-400 text-sm">
+                        {(files.reduce((total, file) => total + file.size, 0) / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {analysisStats && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-500/30 rounded-xl">
+                    <div className="text-center">
+                      <div className="text-blue-400 text-sm font-semibold mb-1">Last Analysis Summary</div>
+                      <div className="text-white">
+                        {analysisStats.successful}/{analysisStats.total} resumes processed successfully
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        Success rate: {Math.round(analysisStats.successRate || 0)}%
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {files.length > 0 && (
-                <div className="mt-6 p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-400 text-xl">✨</span>
-                    <span className="text-green-300 font-medium">
-                      {files.length} files ready for analysis!
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -36,7 +36,7 @@ export class GeminiService {
     }
 
     const prompt = `
-Analyze the following resume against the job description and provide a comprehensive match analysis.
+You are an advanced ATS (Applicant Tracking System) analyzer. Perform a comprehensive resume analysis against the job description with focus on keyword matching, semantic understanding, and ATS compatibility.
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -44,28 +44,69 @@ ${jobDescription}
 RESUME:
 ${resumeText}
 
-Please provide a detailed analysis including:
-1. Overall match percentage (0-100)
-2. Specific matching skills and technologies
-3. Missing critical skills
-4. Experience level assessment
-5. Education relevance
-6. Strengths and areas for improvement
-7. Actionable recommendations
+ANALYSIS REQUIREMENTS:
+1. Keyword Matching: Identify exact matches, synonyms, and related terms
+2. ATS Compatibility: Evaluate resume format and structure for ATS parsing
+3. Skills Assessment: Technical and soft skills alignment
+4. Experience Evaluation: Years, relevance, and progression
+5. Education Matching: Degree relevance and requirements fulfillment
+6. Cultural Fit Indicators: Leadership, teamwork, communication
+7. Gap Analysis: Missing critical requirements
+8. Interview Readiness: Overall candidate preparedness
 
 Respond in this exact JSON format:
 {
   "matchPercentage": number,
-  "matchingSkills": ["skill1", "skill2"],
-  "missingSkills": ["skill1", "skill2"],
-  "experienceMatch": "entry/mid/senior",
-  "educationRelevance": "high/medium/low",
+  "atsScore": {
+    "overall": number,
+    "keywordMatch": number,
+    "skillsAlignment": number,
+    "experienceRelevance": number,
+    "educationFit": number,
+    "formatCompatibility": number
+  },
+  "keywordAnalysis": {
+    "totalJobKeywords": number,
+    "matchedKeywords": ["keyword1", "keyword2"],
+    "missingKeywords": ["keyword1", "keyword2"],
+    "synonymMatches": [{"job": "keyword", "resume": "synonym"}],
+    "keywordDensity": number
+  },
+  "skillsAnalysis": {
+    "matchingSkills": ["skill1", "skill2"],
+    "missingCriticalSkills": ["skill1", "skill2"],
+    "additionalSkills": ["skill1", "skill2"],
+    "skillLevel": "entry/mid/senior/expert",
+    "technicalSkillsScore": number,
+    "softSkillsScore": number
+  },
+  "experienceAnalysis": {
+    "totalYears": number,
+    "relevantYears": number,
+    "experienceMatch": "entry/mid/senior/expert",
+    "careerProgression": "excellent/good/average/poor",
+    "industryRelevance": "high/medium/low",
+    "leadershipExperience": boolean
+  },
+  "educationAnalysis": {
+    "degreeMatch": "exact/related/unrelated",
+    "educationRelevance": "high/medium/low",
+    "certifications": ["cert1", "cert2"],
+    "continuousLearning": boolean
+  },
   "strengths": ["strength1", "strength2"],
   "weaknesses": ["weakness1", "weakness2"],
-  "recommendations": ["recommendation1", "recommendation2"],
-  "keywordMatches": number,
-  "overallAssessment": "brief overall assessment",
-  "interviewReadiness": "ready/needs-preparation/not-ready"
+  "redFlags": ["flag1", "flag2"],
+  "recommendations": {
+    "forCandidate": ["rec1", "rec2"],
+    "forRecruiter": ["rec1", "rec2"]
+  },
+  "interviewQuestions": ["question1", "question2"],
+  "salaryExpectation": "below/within/above budget",
+  "overallAssessment": "detailed assessment",
+  "interviewReadiness": "ready/needs-preparation/not-ready",
+  "hiringRecommendation": "strong-hire/hire/maybe/no-hire",
+  "confidenceScore": number
 }
 `;
 

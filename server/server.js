@@ -86,22 +86,55 @@ app.get('/api/system/status', (req, res) => {
   try {
     const apiKeyStatus = GeminiService.getApiKeyStatus();
     const envStatus = GeminiService.validateEnvironment();
+    const serviceHealth = GeminiService.getServiceHealth();
 
     res.json({
       success: true,
       data: {
         apiKey: apiKeyStatus,
         environment: envStatus,
+        service: serviceHealth,
         server: {
           uptime: process.uptime(),
           memory: process.memoryUsage(),
-          version: config.app.version
+          version: config.app.version,
+          environment: config.app.environment
+        },
+        database: {
+          status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+          name: mongoose.connection.name
         }
       }
     });
   } catch (error) {
     res.status(500).json({
       success: false,
+      error: error.message
+    });
+  }
+});
+
+// Gemini API configuration test endpoint
+app.post('/api/system/test-gemini', async (req, res) => {
+  try {
+    const testText = "This is a test resume with JavaScript and React skills.";
+    const testJob = "We are looking for a frontend developer with React experience.";
+    
+    const result = await GeminiService.analyzeResume(testText, testJob);
+    
+    res.json({
+      success: true,
+      message: 'Gemini API is working correctly',
+      testResult: {
+        matchPercentage: result.matchPercentage,
+        keywordMatches: result.keywordMatches,
+        status: 'operational'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Gemini API test failed',
       error: error.message
     });
   }
