@@ -6,179 +6,148 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function ProfilePage() {
   const { user, apiCall } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  
-  const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.profile?.phone || '',
-    location: user?.profile?.location || '',
-    bio: user?.profile?.bio || '',
-    skills: user?.profile?.skills?.join(', ') || '',
-    experience: user?.profile?.experience || '',
-    education: user?.profile?.education || '',
-    linkedIn: user?.profile?.linkedIn || '',
-    portfolio: user?.profile?.portfolio || '',
-    resume: user?.profile?.resume || null
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState('personal');
+  const [message, setMessage] = useState({ text: '', type: '' });
+
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    skills: [],
+    experience: '',
+    education: '',
+    linkedIn: '',
+    portfolio: '',
+    // Enhanced fields
+    currentCompany: '',
+    expectedSalary: '',
+    noticePeriod: '',
+    workAuthorization: '',
+    availability: '',
+    totalExperience: '',
+    relevantExperience: '',
+    degree: '',
+    university: '',
+    graduationYear: '',
+    gpa: '',
+    abcId: '',
+    certifications: [],
+    languages: [],
+    preferredLocation: ''
   });
 
-  const [resumeFile, setResumeFile] = useState(null);
-
   useEffect(() => {
-    if (user?.profile) {
-      setProfileData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.profile.phone || '',
-        location: user.profile.location || '',
-        bio: user.profile.bio || '',
-        skills: user.profile.skills?.join(', ') || '',
-        experience: user.profile.experience || '',
-        education: user.profile.education || '',
-        linkedIn: user.profile.linkedIn || '',
-        portfolio: user.profile.portfolio || '',
-        resume: user.profile.resume || null
-      });
-    }
-  }, [user]);
+    loadProfile();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfileData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleResumeUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type !== 'application/pdf') {
-        setMessage({ type: 'error', text: 'Please upload a PDF file only.' });
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'File size must be less than 5MB.' });
-        return;
-      }
-      setResumeFile(file);
-      setMessage({ type: '', text: '' });
-    }
-  };
-
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
+  const loadProfile = async () => {
     try {
-      const formData = new FormData();
+      setLoading(true);
+      const response = await apiCall('/api/job-seeker/profile');
       
-      // Add profile data
-      const profileUpdate = {
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        profile: {
-          phone: profileData.phone,
-          location: profileData.location,
-          bio: profileData.bio,
-          skills: profileData.skills.split(',').map(skill => skill.trim()).filter(skill => skill),
-          experience: profileData.experience,
-          education: profileData.education,
-          linkedIn: profileData.linkedIn,
-          portfolio: profileData.portfolio
-        }
-      };
-
-      formData.append('profileData', JSON.stringify(profileUpdate));
-      
-      if (resumeFile) {
-        formData.append('resume', resumeFile);
-      }
-
-      const response = await apiCall('/api/auth/profile', {
-        method: 'PUT',
-        body: formData,
-        headers: {} // Remove Content-Type to let browser set it for FormData
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setMessage({ type: 'success', text: 'Profile updated successfully!' });
-        setIsEditing(false);
-        setResumeFile(null);
+      if (response.ok) {
+        const data = await response.json();
+        const profile = data.data;
         
-        // Update profile data with response
-        if (data.data?.user) {
-          setProfileData({
-            firstName: data.data.user.firstName,
-            lastName: data.data.user.lastName,
-            email: data.data.user.email,
-            phone: data.data.user.profile?.phone || '',
-            location: data.data.user.profile?.location || '',
-            bio: data.data.user.profile?.bio || '',
-            skills: data.data.user.profile?.skills?.join(', ') || '',
-            experience: data.data.user.profile?.experience || '',
-            education: data.data.user.profile?.education || '',
-            linkedIn: data.data.user.profile?.linkedIn || '',
-            portfolio: data.data.user.profile?.portfolio || '',
-            resume: data.data.user.profile?.resume || null
-          });
-        }
-      } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to update profile' });
+        setFormData({
+          firstName: profile.firstName || '',
+          lastName: profile.lastName || '',
+          email: profile.email || '',
+          phone: profile.profile?.phone || '',
+          location: profile.profile?.location || '',
+          bio: profile.profile?.bio || '',
+          skills: profile.profile?.skills || [],
+          experience: profile.profile?.experience || '',
+          education: profile.profile?.education || '',
+          linkedIn: profile.profile?.linkedIn || '',
+          portfolio: profile.profile?.portfolio || '',
+          // Enhanced fields
+          currentCompany: profile.profile?.currentCompany || '',
+          expectedSalary: profile.profile?.expectedSalary || '',
+          noticePeriod: profile.profile?.noticePeriod || '',
+          workAuthorization: profile.profile?.workAuthorization || '',
+          availability: profile.profile?.availability || '',
+          totalExperience: profile.profile?.totalExperience || '',
+          relevantExperience: profile.profile?.relevantExperience || '',
+          degree: profile.profile?.degree || '',
+          university: profile.profile?.university || '',
+          graduationYear: profile.profile?.graduationYear || '',
+          gpa: profile.profile?.gpa || '',
+          abcId: profile.profile?.abcId || '',
+          certifications: profile.profile?.certifications || [],
+          languages: profile.profile?.languages || [],
+          preferredLocation: profile.profile?.preferredLocation || ''
+        });
       }
     } catch (error) {
-      console.error('Profile update error:', error);
-      setMessage({ type: 'error', text: 'An error occurred while updating profile' });
+      console.error('Error loading profile:', error);
+      setMessage({ text: 'Failed to load profile', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    // Reset to original data
-    setProfileData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
-      phone: user?.profile?.phone || '',
-      location: user?.profile?.location || '',
-      bio: user?.profile?.bio || '',
-      skills: user?.profile?.skills?.join(', ') || '',
-      experience: user?.profile?.experience || '',
-      education: user?.profile?.education || '',
-      linkedIn: user?.profile?.linkedIn || '',
-      portfolio: user?.profile?.portfolio || '',
-      resume: user?.profile?.resume || null
-    });
-    setResumeFile(null);
-    setIsEditing(false);
-    setMessage({ type: '', text: '' });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const response = await apiCall('/api/job-seeker/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        setMessage({ text: 'Profile updated successfully!', type: 'success' });
+        setTimeout(() => setMessage({ text: '', type: '' }), 3000);
+      } else {
+        const error = await response.json();
+        setMessage({ text: error.error || 'Failed to update profile', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setMessage({ text: 'Failed to update profile', type: 'error' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const getCompletionPercentage = () => {
-    const fields = [
-      profileData.firstName,
-      profileData.lastName,
-      profileData.email,
-      profileData.phone,
-      profileData.location,
-      profileData.bio,
-      profileData.skills,
-      profileData.experience,
-      profileData.education,
-      profileData.resume?.fileName
-    ];
-    
-    const completedFields = fields.filter(field => field && field.trim()).length;
-    return Math.round((completedFields / fields.length) * 100);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleSkillsChange = (skillsText) => {
+    const skillsArray = skillsText.split(',').map(skill => skill.trim()).filter(skill => skill);
+    setFormData(prev => ({ ...prev, skills: skillsArray }));
+  };
+
+  const handleCertificationsChange = (certsText) => {
+    const certsArray = certsText.split(',').map(cert => cert.trim()).filter(cert => cert);
+    setFormData(prev => ({ ...prev, certifications: certsArray }));
+  };
+
+  const handleLanguagesChange = (languagesText) => {
+    const languagesArray = languagesText.split(',').map(lang => lang.trim()).filter(lang => lang);
+    setFormData(prev => ({ ...prev, languages: languagesArray }));
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading Profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
@@ -186,294 +155,430 @@ export default function ProfilePage() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-pink-400/10 to-red-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-green-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
 
       <Navbar />
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
-        {/* Header */}
-        <div className="text-center mb-8">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
             👤 My Profile
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto font-light">
-            Complete your profile to unlock better job matches and opportunities
+          <p className="text-lg md:text-xl text-gray-300 font-light">
+            Keep your profile updated to attract better opportunities
           </p>
         </div>
 
-        {/* Profile Completion */}
-        <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white">Profile Completion</h3>
-            <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
-              {getCompletionPercentage()}%
-            </span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-3">
-            <div 
-              className="bg-gradient-to-r from-green-400 to-cyan-400 h-3 rounded-full transition-all duration-500"
-              style={{ width: `${getCompletionPercentage()}%` }}
-            ></div>
-          </div>
-          <p className="text-gray-400 text-sm mt-2">
-            {getCompletionPercentage() === 100 
-              ? '🎉 Perfect! Your profile is complete' 
-              : 'Complete your profile to improve job matching accuracy'
-            }
-          </p>
-        </div>
-
-        {/* Message Display */}
+        {/* Message */}
         {message.text && (
-          <div className={`p-4 rounded-xl mb-6 ${
+          <div className={`mb-6 p-4 rounded-xl ${
             message.type === 'success' 
-              ? 'bg-green-500/20 border border-green-500/50 text-green-300' 
-              : 'bg-red-500/20 border border-red-500/50 text-red-300'
+              ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+              : 'bg-red-500/20 text-red-300 border border-red-500/30'
           }`}>
             {message.text}
           </div>
         )}
 
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-2 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-2 border border-white/20">
+            {[
+              { key: 'personal', label: '👤 Personal', icon: '👤' },
+              { key: 'professional', label: '💼 Professional', icon: '💼' },
+              { key: 'academic', label: '🎓 Academic', icon: '🎓' },
+              { key: 'additional', label: '📋 Additional', icon: '📋' }
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveSection(tab.key)}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  activeSection === tab.key
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Profile Form */}
-        <form onSubmit={handleSaveProfile} className="space-y-8">
+        <form onSubmit={handleSubmit} className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+          
           {/* Personal Information */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-white">👤 Personal Information</h3>
-              {!isEditing && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105"
-                >
-                  ✏️ Edit Profile
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">First Name *</label>
-                <input
-                  type="text"
-                  name="firstName"
-                  value={profileData.firstName}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
+          {activeSection === 'personal' && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-white mb-6">👤 Personal Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="Enter your first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="Enter your last name"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-gray-300 font-medium mb-2">Last Name *</label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={profileData.lastName}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  required
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Email *</label>
+                <label className="block text-gray-300 font-medium mb-2">Email</label>
                 <input
                   type="email"
                   name="email"
-                  value={profileData.email}
+                  value={formData.email}
+                  onChange={handleInputChange}
                   disabled
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-gray-400 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-gray-400 cursor-not-allowed"
                 />
-                <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="City, State/Country"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-gray-300 font-medium mb-2">Phone Number *</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={profileData.phone}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="+1 (555) 123-4567"
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-gray-300 font-medium mb-2">Location *</label>
-                <input
-                  type="text"
-                  name="location"
-                  value={profileData.location}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="City, State, Country"
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Professional Information */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-            <h3 className="text-2xl font-bold text-white mb-6">💼 Professional Information</h3>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Professional Bio *</label>
+                <label className="block text-gray-300 font-medium mb-2">Bio</label>
                 <textarea
                   name="bio"
-                  value={profileData.bio}
+                  value={formData.bio}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
                   rows={4}
-                  placeholder="Tell us about yourself, your experience, and career goals..."
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="Tell us about yourself..."
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Skills *</label>
-                <input
-                  type="text"
-                  name="skills"
-                  value={profileData.skills}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="JavaScript, React, Node.js, Python, SQL..."
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-500 mt-1">Separate skills with commas</p>
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Work Experience *</label>
-                <textarea
-                  name="experience"
-                  value={profileData.experience}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  rows={4}
-                  placeholder="Describe your work experience, previous roles, and achievements..."
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Education *</label>
-                <textarea
-                  name="education"
-                  value={profileData.education}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  rows={3}
-                  placeholder="Your educational background, degrees, certifications..."
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed resize-y"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Links & Documents */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-            <h3 className="text-2xl font-bold text-white mb-6">🔗 Links & Documents</h3>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">LinkedIn Profile</label>
-                <input
-                  type="url"
-                  name="linkedIn"
-                  value={profileData.linkedIn}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="https://linkedin.com/in/yourprofile"
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Portfolio Website</label>
-                <input
-                  type="url"
-                  name="portfolio"
-                  value={profileData.portfolio}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  placeholder="https://yourportfolio.com"
-                  className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-
-              {/* Resume Upload */}
-              <div>
-                <label className="block text-gray-300 font-medium mb-2">Resume *</label>
-                {profileData.resume?.fileName && (
-                  <div className="mb-4 p-4 bg-green-500/20 border border-green-500/50 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">📄</span>
-                        <div>
-                          <p className="text-green-300 font-medium">{profileData.resume.fileName}</p>
-                          <p className="text-green-400 text-sm">
-                            Uploaded: {profileData.resume.uploadDate ? new Date(profileData.resume.uploadDate).toLocaleDateString() : 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      {profileData.resume.fileUrl && (
-                        <a
-                          href={profileData.resume.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-300 hover:text-green-200 underline"
-                        >
-                          View
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {isEditing && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">LinkedIn Profile</label>
                   <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={handleResumeUpload}
-                    className="w-full p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer"
+                    type="url"
+                    name="linkedIn"
+                    value={formData.linkedIn}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="https://linkedin.com/in/yourprofile"
                   />
-                )}
-                {isEditing && (
-                  <p className="text-xs text-gray-500 mt-1">Upload PDF only. Max size: 5MB</p>
-                )}
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Portfolio Website</label>
+                  <input
+                    type="url"
+                    name="portfolio"
+                    value={formData.portfolio}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="https://yourportfolio.com"
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          {isEditing && (
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-8 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-medium transition-all duration-300"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-600 hover:from-green-600 hover:to-cyan-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-              >
-                {loading && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>}
-                <span>{loading ? 'Saving...' : 'Save Profile'}</span>
-              </button>
             </div>
           )}
+
+          {/* Professional Information */}
+          {activeSection === 'professional' && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-white mb-6">💼 Professional Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Current Company</label>
+                  <input
+                    type="text"
+                    name="currentCompany"
+                    value={formData.currentCompany}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="Current employer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Total Experience</label>
+                  <input
+                    type="text"
+                    name="totalExperience"
+                    value={formData.totalExperience}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., 5 years"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Relevant Experience</label>
+                  <input
+                    type="text"
+                    name="relevantExperience"
+                    value={formData.relevantExperience}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., 3 years"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Notice Period</label>
+                  <select
+                    name="noticePeriod"
+                    value={formData.noticePeriod}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                  >
+                    <option value="">Select notice period</option>
+                    <option value="Immediate">Immediate</option>
+                    <option value="2 weeks">2 weeks</option>
+                    <option value="1 month">1 month</option>
+                    <option value="2 months">2 months</option>
+                    <option value="3 months">3 months</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Expected Salary</label>
+                  <input
+                    type="text"
+                    name="expectedSalary"
+                    value={formData.expectedSalary}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., $80k - $100k"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Work Authorization</label>
+                  <select
+                    name="workAuthorization"
+                    value={formData.workAuthorization}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                  >
+                    <option value="">Select work authorization</option>
+                    <option value="US Citizen">US Citizen</option>
+                    <option value="Green Card">Green Card</option>
+                    <option value="H1B Visa">H1B Visa</option>
+                    <option value="F1 Visa">F1 Visa</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">Skills</label>
+                <input
+                  type="text"
+                  value={formData.skills.join(', ')}
+                  onChange={(e) => handleSkillsChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="JavaScript, React, Node.js, Python (comma-separated)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">Certifications</label>
+                <input
+                  type="text"
+                  value={formData.certifications.join(', ')}
+                  onChange={(e) => handleCertificationsChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="AWS Certified Developer, Google Cloud Professional (comma-separated)"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Availability</label>
+                  <input
+                    type="text"
+                    name="availability"
+                    value={formData.availability}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., Available immediately"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Preferred Location</label>
+                  <input
+                    type="text"
+                    name="preferredLocation"
+                    value={formData.preferredLocation}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="Preferred work location"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Academic Information */}
+          {activeSection === 'academic' && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-white mb-6">🎓 Academic Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Degree</label>
+                  <input
+                    type="text"
+                    name="degree"
+                    value={formData.degree}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., Bachelor of Computer Science"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">University</label>
+                  <input
+                    type="text"
+                    name="university"
+                    value={formData.university}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="University name"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">Graduation Year</label>
+                  <input
+                    type="number"
+                    name="graduationYear"
+                    value={formData.graduationYear}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., 2022"
+                    min="1990"
+                    max="2030"
+                  />
+                </div>
+                <div>
+                  <label className="block text-gray-300 font-medium mb-2">GPA</label>
+                  <input
+                    type="text"
+                    name="gpa"
+                    value={formData.gpa}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g., 3.8 or 8.5"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">ABC ID (Academic Bank of Credits)</label>
+                <input
+                  type="text"
+                  name="abcId"
+                  value={formData.abcId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="Enter ABC ID if applicable"
+                />
+                <p className="text-sm text-gray-500 mt-2">ABC ID is applicable for Indian students pursuing higher education</p>
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">Education Details</label>
+                <textarea
+                  name="education"
+                  value={formData.education}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="Additional education details, courses, etc."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Additional Information */}
+          {activeSection === 'additional' && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bold text-white mb-6">📋 Additional Information</h3>
+              
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">Languages</label>
+                <input
+                  type="text"
+                  value={formData.languages.join(', ')}
+                  onChange={(e) => handleLanguagesChange(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="English, Spanish, French (comma-separated)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-gray-300 font-medium mb-2">Professional Experience</label>
+                <textarea
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleInputChange}
+                  rows={6}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  placeholder="Describe your professional experience, key projects, and achievements..."
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Save Button */}
+          <div className="flex justify-center pt-6">
+            <button
+              type="submit"
+              disabled={saving}
+              className={`px-12 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                saving ? 'animate-pulse' : ''
+              }`}
+            >
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
         </form>
       </div>
 

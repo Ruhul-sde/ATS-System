@@ -1,10 +1,10 @@
-
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import JobApplication from '../models/JobApplication.js';
 import SavedJob from '../models/SavedJob.js';
 import Interview from '../models/Interview.js';
 import JobRole from '../models/JobRole.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -15,10 +15,9 @@ router.get('/dashboard/stats', authenticateToken, async (req, res) => {
 
     // Get counts
     const appliedJobs = await JobApplication.countDocuments({ applicant: userId });
-    const savedJobs = await SavedJob.countDocuments({ user: userId });
-    const interviews = await Interview.countDocuments({ 
+    const interviews = await JobApplication.countDocuments({ 
       applicant: userId, 
-      status: { $in: ['scheduled', 'completed'] }
+      status: { $in: ['interview-scheduled', 'shortlisted'] }
     });
 
     // Calculate profile views (placeholder - would need tracking implementation)
@@ -28,7 +27,7 @@ router.get('/dashboard/stats', authenticateToken, async (req, res) => {
       success: true,
       data: {
         appliedJobs,
-        savedJobs,
+        savedJobs: 0, // Placeholder for saved jobs functionality
         interviews,
         profileViews
       }
@@ -46,19 +45,18 @@ router.get('/applications', authenticateToken, async (req, res) => {
   try {
     const applications = await JobApplication.find({ applicant: req.user._id })
       .populate('job', 'title department location salaryRange')
-      .sort({ createdAt: -1 })
-      .limit(20);
+      .sort({ createdAt: -1 });
 
     const formattedApplications = applications.map(app => ({
       id: app._id,
-      job: app.job.title,
-      company: app.job.department,
+      job: app.job?.title || 'Unknown Position',
+      company: app.job?.department || 'TechCorp',
+      location: app.job?.location || 'Location not specified',
       status: app.status,
       appliedDate: app.createdAt,
       statusColor: getStatusColor(app.status),
-      jobId: app.job._id,
-      location: app.job.location,
-      salary: app.job.salaryRange
+      jobId: app.job?._id,
+      salary: app.job?.salaryRange
     }));
 
     res.json({
@@ -88,7 +86,7 @@ router.get('/saved-jobs', authenticateToken, async (req, res) => {
       company: saved.job.department,
       location: saved.job.location,
       salary: saved.job.salaryRange,
-      savedDate: saved.createdAt,
+      savedDate: saved.savedDate,
       status: saved.job.status
     }));
 
@@ -129,6 +127,99 @@ router.get('/interviews', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       data: formattedInterviews
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get user profile
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password -refreshToken');
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update user profile
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      phone,
+      location,
+      bio,
+      skills,
+      experience,
+      education,
+      linkedIn,
+      portfolio,
+      // Enhanced profile fields
+      currentCompany,
+      expectedSalary,
+      noticePeriod,
+      workAuthorization,
+      availability,
+      totalExperience,
+      relevantExperience,
+      degree,
+      university,
+      graduationYear,
+      gpa,
+      abcId,
+      certifications,
+      languages,
+      preferredLocation
+    } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        firstName,
+        lastName,
+        'profile.phone': phone,
+        'profile.location': location,
+        'profile.bio': bio,
+        'profile.skills': skills,
+        'profile.experience': experience,
+        'profile.education': education,
+        'profile.linkedIn': linkedIn,
+        'profile.portfolio': portfolio,
+        'profile.currentCompany': currentCompany,
+        'profile.expectedSalary': expectedSalary,
+        'profile.noticePeriod': noticePeriod,
+        'profile.workAuthorization': workAuthorization,
+        'profile.availability': availability,
+        'profile.totalExperience': totalExperience,
+        'profile.relevantExperience': relevantExperience,
+        'profile.degree': degree,
+        'profile.university': university,
+        'profile.graduationYear': graduationYear,
+        'profile.gpa': gpa,
+        'profile.abcId': abcId,
+        'profile.certifications': certifications,
+        'profile.languages': languages,
+        'profile.preferredLocation': preferredLocation
+      },
+      { new: true, runValidators: true }
+    ).select('-password -refreshToken');
+
+    res.json({
+      success: true,
+      data: updatedUser
     });
   } catch (error) {
     res.status(500).json({

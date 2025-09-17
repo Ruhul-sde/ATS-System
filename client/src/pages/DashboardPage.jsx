@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import SystemStatus from '../components/SystemStatus';
@@ -9,7 +8,7 @@ export default function DashboardPage() {
   const { user, apiCall } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Dynamic dashboard data
   const [dashboardData, setDashboardData] = useState({
     stats: {
@@ -49,7 +48,7 @@ export default function DashboardPage() {
   // Load dashboard data
   useEffect(() => {
     loadDashboardData();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       refreshDashboardData();
@@ -61,7 +60,7 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Load various dashboard components
       await Promise.all([
         loadStats(),
@@ -90,19 +89,13 @@ export default function DashboardPage() {
 
   const loadStats = async () => {
     try {
-      // Mock data for now - replace with actual API calls
-      const mockStats = {
-        totalResumes: Math.floor(Math.random() * 500) + 200,
-        processed: Math.floor(Math.random() * 450) + 180,
-        matched: Math.floor(Math.random() * 100) + 50,
-        pending: Math.floor(Math.random() * 50) + 10,
-        activeJobs: Math.floor(Math.random() * 25) + 15,
-        totalApplications: Math.floor(Math.random() * 1000) + 500,
-        interviewsScheduled: Math.floor(Math.random() * 50) + 25,
-        hiredCandidates: Math.floor(Math.random() * 20) + 10
-      };
-
-      setDashboardData(prev => ({ ...prev, stats: mockStats }));
+      const response = await apiCall('/api/admin/dashboard/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(prev => ({ ...prev, stats: data.data }));
+      } else {
+        console.error('Failed to load stats');
+      }
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -110,57 +103,13 @@ export default function DashboardPage() {
 
   const loadRecentActivity = async () => {
     try {
-      const mockActivity = [
-        { 
-          id: 1, 
-          action: "High-match candidate found", 
-          candidate: "Sarah Chen", 
-          time: "2 mins ago", 
-          type: "success", 
-          score: 95,
-          icon: "🎯",
-          priority: "high"
-        },
-        { 
-          id: 2, 
-          action: "New job application received", 
-          candidate: "Michael Rodriguez", 
-          job: "Senior Developer",
-          time: "5 mins ago", 
-          type: "info", 
-          icon: "📝",
-          priority: "medium"
-        },
-        { 
-          id: 3, 
-          action: "Interview completed successfully", 
-          candidate: "Emma Thompson", 
-          time: "15 mins ago", 
-          type: "success", 
-          icon: "✅",
-          priority: "low"
-        },
-        { 
-          id: 4, 
-          action: "Batch processing completed", 
-          count: "24 resumes", 
-          time: "30 mins ago", 
-          type: "info", 
-          icon: "⚡",
-          priority: "medium"
-        },
-        { 
-          id: 5, 
-          action: "New job posting published", 
-          job: "Product Manager", 
-          time: "1 hour ago", 
-          type: "info", 
-          icon: "🚀",
-          priority: "low"
-        }
-      ];
-
-      setDashboardData(prev => ({ ...prev, recentActivity: mockActivity }));
+      const response = await apiCall('/api/admin/dashboard/activity');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(prev => ({ ...prev, recentActivity: data.data }));
+      } else {
+        console.error('Failed to load activity');
+      }
     } catch (error) {
       console.error('Error loading activity:', error);
     }
@@ -168,50 +117,13 @@ export default function DashboardPage() {
 
   const loadTopCandidates = async () => {
     try {
-      const mockCandidates = [
-        { 
-          name: "Emma Thompson", 
-          match: 96, 
-          skills: ["React", "TypeScript", "AWS", "Docker"], 
-          status: "Interview", 
-          avatar: "👩‍💻",
-          position: "Senior React Developer",
-          experience: "6+ years",
-          location: "San Francisco, CA"
-        },
-        { 
-          name: "David Kim", 
-          match: 92, 
-          skills: ["Python", "Django", "PostgreSQL", "Redis"], 
-          status: "Reviewing", 
-          avatar: "👨‍💼",
-          position: "Backend Engineer",
-          experience: "5+ years",
-          location: "Seattle, WA"
-        },
-        { 
-          name: "Lisa Wang", 
-          match: 89, 
-          skills: ["Vue.js", "Node.js", "MongoDB"], 
-          status: "New", 
-          avatar: "👩‍🔬",
-          position: "Full Stack Developer",
-          experience: "4+ years",
-          location: "Austin, TX"
-        },
-        { 
-          name: "Alex Johnson", 
-          match: 85, 
-          skills: ["Java", "Spring Boot", "Kubernetes"], 
-          status: "Offer Sent", 
-          avatar: "👨‍💻",
-          position: "Java Developer",
-          experience: "7+ years",
-          location: "New York, NY"
-        }
-      ];
-
-      setDashboardData(prev => ({ ...prev, topCandidates: mockCandidates }));
+      const response = await apiCall('/api/admin/dashboard/candidates');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(prev => ({ ...prev, topCandidates: data.data }));
+      } else {
+        console.error('Failed to load candidates');
+      }
     } catch (error) {
       console.error('Error loading candidates:', error);
     }
@@ -219,40 +131,13 @@ export default function DashboardPage() {
 
   const loadJobsOverview = async () => {
     try {
-      const mockJobs = [
-        {
-          id: 1,
-          title: "Senior React Developer",
-          applications: 45,
-          views: 234,
-          status: "active",
-          urgency: "high",
-          department: "Engineering",
-          daysOpen: 5
-        },
-        {
-          id: 2,
-          title: "Product Manager",
-          applications: 32,
-          views: 189,
-          status: "active",
-          urgency: "medium",
-          department: "Product",
-          daysOpen: 12
-        },
-        {
-          id: 3,
-          title: "UX Designer",
-          applications: 28,
-          views: 156,
-          status: "active",
-          urgency: "low",
-          department: "Design",
-          daysOpen: 8
-        }
-      ];
-
-      setDashboardData(prev => ({ ...prev, jobsOverview: mockJobs }));
+      const response = await apiCall('/api/admin/dashboard/jobs');
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(prev => ({ ...prev, jobsOverview: data.data }));
+      } else {
+        console.error('Failed to load jobs');
+      }
     } catch (error) {
       console.error('Error loading jobs:', error);
     }
@@ -292,10 +177,10 @@ export default function DashboardPage() {
     }
   };
 
-  const StatCard = ({ title, value, subtitle, trend, icon, color = "blue", loading: cardLoading = false }) => (
+  const StatCard = ({ title, value, subtitle, trend, icon, color = "primary", loading: cardLoading = false }) => (
     <div className="group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 hover:border-white/40 transition-all duration-500 hover:scale-105 hover:shadow-2xl">
       <div className="flex items-center justify-between mb-6">
-        <div className={`text-5xl p-4 bg-gradient-to-br from-${color}-400/20 to-${color}-600/20 rounded-2xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`text-5xl p-4 bg-gradient-to-br ${color === 'primary' ? 'from-red-400/20 to-red-600/20' : color === 'secondary' ? 'from-blue-400/20 to-blue-600/20' : 'from-purple-400/20 to-purple-600/20'} rounded-2xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-300`}>
           {cardLoading ? '⏳' : icon}
         </div>
         {trend && (
@@ -305,19 +190,19 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-      <div className={`text-4xl font-bold mb-2 bg-gradient-to-r from-${color}-400 to-purple-400 bg-clip-text text-transparent`}>
+      <div className={`text-4xl font-bold mb-2 ${color === 'primary' ? 'bg-gradient-to-r from-red-400 to-red-600' : color === 'secondary' ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-purple-400 to-purple-600'} bg-clip-text text-transparent`}>
         {cardLoading ? '...' : typeof value === 'number' ? value.toLocaleString() : value}
       </div>
       <div className="text-white font-medium text-lg mb-2">{title}</div>
       {subtitle && (
         <div className="text-gray-400 text-sm">{subtitle}</div>
       )}
-      
+
       {/* Progress bar for visual appeal */}
       <div className="mt-4 h-1 bg-gray-700 rounded-full overflow-hidden">
         <div 
-          className={`h-full bg-gradient-to-r from-${color}-400 to-${color}-600 rounded-full transition-all duration-1000 ease-out`}
-          style={{ width: cardLoading ? '0%' : `${Math.min((typeof value === 'number' ? value : 0) / 100, 100)}%` }}
+          className={`h-full ${color === 'primary' ? 'bg-gradient-to-r from-red-400 to-red-600' : color === 'secondary' ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-purple-400 to-purple-600'} rounded-full transition-all duration-1000 ease-out`}
+          style={{ width: cardLoading ? '0%' : `${Math.min((typeof value === 'number' ? value : 0) / Math.max((typeof value === 'number' ? value : 0) + 20, 100), 100) * 100}%` }}
         ></div>
       </div>
     </div>
@@ -325,9 +210,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
           <p className="text-white text-xl">Loading Dashboard...</p>
         </div>
       </div>
@@ -335,13 +220,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
       {/* Enhanced Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-pink-400/10 to-red-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-green-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent animate-pulse"></div>
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-red-400/10 to-red-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-red-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red-500/5 to-transparent animate-pulse"></div>
       </div>
 
       <Navbar />
@@ -353,7 +238,7 @@ export default function DashboardPage() {
         <div className="text-center py-12">
           <div className="animate-fade-in-up">
             <div className="flex items-center justify-center space-x-4 mb-6">
-              <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-red-400 via-blue-400 to-red-400 bg-clip-text text-transparent">
                 🎯 Admin Dashboard
               </h1>
               <button 
@@ -399,7 +284,7 @@ export default function DashboardPage() {
                 onClick={() => setActiveSection(tab.key)}
                 className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                   activeSection === tab.key
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-red-500 to-blue-600 text-white shadow-lg'
                     : 'text-gray-400 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -417,7 +302,7 @@ export default function DashboardPage() {
             subtitle="All submissions"
             trend={12.5}
             icon="📄"
-            color="blue"
+            color="primary"
             loading={refreshing}
           />
           <StatCard
@@ -426,7 +311,7 @@ export default function DashboardPage() {
             subtitle="AI analyzed"
             trend={8.3}
             icon="⚡"
-            color="green"
+            color="secondary"
             loading={refreshing}
           />
           <StatCard
@@ -435,7 +320,7 @@ export default function DashboardPage() {
             subtitle="Quality candidates"
             trend={15.2}
             icon="🎯"
-            color="purple"
+            color="primary"
             loading={refreshing}
           />
           <StatCard
@@ -444,7 +329,7 @@ export default function DashboardPage() {
             subtitle="Open positions"
             trend={-2.1}
             icon="💼"
-            color="cyan"
+            color="secondary"
             loading={refreshing}
           />
         </div>
@@ -457,7 +342,7 @@ export default function DashboardPage() {
             subtitle="Total received"
             trend={7.8}
             icon="📝"
-            color="yellow"
+            color="primary"
             loading={refreshing}
           />
           <StatCard
@@ -466,7 +351,7 @@ export default function DashboardPage() {
             subtitle="Scheduled"
             trend={22.4}
             icon="🎤"
-            color="pink"
+            color="secondary"
             loading={refreshing}
           />
           <StatCard
@@ -475,7 +360,7 @@ export default function DashboardPage() {
             subtitle="Successful placements"
             trend={33.1}
             icon="🎉"
-            color="emerald"
+            color="primary"
             loading={refreshing}
           />
           <StatCard
@@ -484,7 +369,7 @@ export default function DashboardPage() {
             subtitle="Awaiting action"
             trend={-5.2}
             icon="⏳"
-            color="orange"
+            color="secondary"
             loading={refreshing}
           />
         </div>
@@ -503,7 +388,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {dashboardData.recentActivity.map((activity, index) => (
+                {dashboardData.recentActivity.length > 0 ? dashboardData.recentActivity.map((activity, index) => (
                   <div key={activity.id} className={`group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border-l-4 transition-all duration-300 hover:bg-white/10 hover:scale-[1.02] ${getPriorityColor(activity.priority)}`}>
                     <div className="flex items-center space-x-4">
                       <div className="text-3xl group-hover:scale-110 transition-transform duration-300">
@@ -532,7 +417,12 @@ export default function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <div className="text-4xl mb-4">📭</div>
+                    <div>No recent activity</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -542,7 +432,7 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
               <h3 className="text-3xl font-bold text-white mb-8">🏆 Top Candidates</h3>
               <div className="space-y-4">
-                {dashboardData.topCandidates.map((candidate, index) => (
+                {dashboardData.topCandidates.length > 0 ? dashboardData.topCandidates.map((candidate, index) => (
                   <div key={index} className="group bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
@@ -587,7 +477,12 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <div className="text-4xl mb-4">👥</div>
+                    <div>No candidates yet</div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -597,7 +492,7 @@ export default function DashboardPage() {
         <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
           <h3 className="text-3xl font-bold text-white mb-8 text-center">💼 Active Jobs Overview</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {dashboardData.jobsOverview.map((job) => (
+            {dashboardData.jobsOverview.length > 0 ? dashboardData.jobsOverview.map((job) => (
               <div key={job.id} className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-white font-bold text-lg">{job.title}</h4>
@@ -614,7 +509,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Views</span>
-                    <span className="text-purple-400 font-bold">{job.views}</span>
+                    <span className="text-red-400 font-bold">{job.views}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Days Open</span>
@@ -626,7 +521,12 @@ export default function DashboardPage() {
                   <div className="text-sm text-gray-400">{job.department}</div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="col-span-3 text-center py-8 text-gray-400">
+                <div className="text-4xl mb-4">💼</div>
+                <div>No active jobs</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -641,7 +541,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
               <div className="text-4xl mb-4">⚡</div>
-              <div className="text-2xl font-bold text-blue-400 mb-2">{dashboardData.systemMetrics.processingSpeed}/hr</div>
+              <div className="text-2xl font-bold text-red-400 mb-2">{dashboardData.systemMetrics.processingSpeed}/hr</div>
               <div className="text-gray-300 text-sm">Processing Speed</div>
             </div>
             <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
@@ -651,7 +551,7 @@ export default function DashboardPage() {
             </div>
             <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
               <div className="text-4xl mb-4">📡</div>
-              <div className="text-2xl font-bold text-purple-400 mb-2">{dashboardData.systemMetrics.responseTime}ms</div>
+              <div className="text-2xl font-bold text-blue-400 mb-2">{dashboardData.systemMetrics.responseTime}ms</div>
               <div className="text-gray-300 text-sm">Response Time</div>
             </div>
             <div className="text-center p-6 bg-white/5 rounded-2xl border border-white/10">
@@ -667,18 +567,18 @@ export default function DashboardPage() {
           <h3 className="text-3xl font-bold text-white mb-8 text-center">🚀 Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: "📤", label: "Upload Resumes", color: "blue", action: "/ats" },
-              { icon: "📝", label: "Create Job", color: "green", action: "/jobs" },
-              { icon: "👥", label: "View Candidates", color: "purple", action: "/candidates" },
-              { icon: "📊", label: "Analytics", color: "orange", action: "/analytics" }
+              { icon: "📤", label: "Upload Resumes", color: "red", action: "/ats" },
+              { icon: "📝", label: "Create Job", color: "blue", action: "/jobs" },
+              { icon: "👥", label: "View Candidates", color: "red", action: "/candidates" },
+              { icon: "📊", label: "Analytics", color: "blue", action: "/analytics" }
             ].map((action, index) => (
               <button 
                 key={index}
                 onClick={() => window.location.href = action.action}
                 className="group relative overflow-hidden"
               >
-                <div className={`absolute inset-0 bg-gradient-to-r from-${action.color}-600/30 to-${action.color}-400/30 rounded-xl blur-sm group-hover:blur-md transition-all duration-300`}></div>
-                <div className={`relative flex flex-col items-center p-8 bg-gradient-to-br from-${action.color}-500/20 to-${action.color}-600/20 backdrop-blur-sm rounded-xl border border-white/20 hover:border-${action.color}-400/50 transition-all duration-300 hover:scale-105 hover:rotate-1 group-hover:shadow-2xl`}>
+                <div className={`absolute inset-0 bg-gradient-to-r ${action.color === 'red' ? 'from-red-600/30 to-red-400/30' : 'from-blue-600/30 to-blue-400/30'} rounded-xl blur-sm group-hover:blur-md transition-all duration-300`}></div>
+                <div className={`relative flex flex-col items-center p-8 bg-gradient-to-br ${action.color === 'red' ? 'from-red-500/20 to-red-600/20 border-red-400/50' : 'from-blue-500/20 to-blue-600/20 border-blue-400/50'} backdrop-blur-sm rounded-xl border border-white/20 hover:border-opacity-50 transition-all duration-300 hover:scale-105 hover:rotate-1 group-hover:shadow-2xl`}>
                   <span className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-200">{action.icon}</span>
                   <span className="text-lg font-medium text-white text-center">{action.label}</span>
                 </div>

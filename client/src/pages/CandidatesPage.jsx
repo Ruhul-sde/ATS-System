@@ -1,126 +1,144 @@
+
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function CandidatesPage() {
+  const { user, apiCall } = useAuth();
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('score');
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    new: 0,
+    screening: 0,
+    interview: 0,
+    offer: 0,
+    hired: 0,
+    rejected: 0,
+    avgMatch: 0
+  });
 
-  const [candidates, setCandidates] = useState([
-    {
-      id: 1,
-      name: 'Sarah Chen',
-      email: 'sarah.chen@email.com',
-      position: 'Senior React Developer',
-      matchScore: 96,
-      status: 'interview',
-      location: 'San Francisco, CA',
-      experience: '6 years',
-      salary: '$140k',
-      appliedDate: '2024-01-20',
-      avatar: '👩‍💻',
-      skills: ['React', 'TypeScript', 'Next.js', 'GraphQL', 'AWS'],
-      education: 'MS Computer Science - Stanford',
-      previousCompany: 'Meta',
-      phone: '+1 (555) 123-4567',
-      linkedin: 'linkedin.com/in/sarahchen',
-      summary: 'Experienced frontend developer with expertise in React ecosystem...',
-      strengths: ['Strong technical skills', 'Team leadership', 'Problem solving'],
-      concerns: ['Salary expectations might be high', 'Remote work preference']
-    },
-    {
-      id: 2,
-      name: 'Michael Rodriguez',
-      email: 'mike.rodriguez@email.com',
-      position: 'Product Manager',
-      matchScore: 89,
-      status: 'screening',
-      location: 'New York, NY',
-      experience: '4 years',
-      salary: '$130k',
-      appliedDate: '2024-01-18',
-      avatar: '👨‍💼',
-      skills: ['Product Strategy', 'Agile', 'Data Analysis', 'Roadmapping', 'Stakeholder Management'],
-      education: 'MBA - Wharton, BS Engineering - MIT',
-      previousCompany: 'Google',
-      phone: '+1 (555) 234-5678',
-      linkedin: 'linkedin.com/in/mikerodriguez',
-      summary: 'Strategic product manager with proven track record in B2B SaaS...',
-      strengths: ['Strategic thinking', 'Cross-functional collaboration', 'Data-driven decisions'],
-      concerns: ['Limited experience in our industry', 'Relocation required']
-    },
-    {
-      id: 3,
-      name: 'Emma Thompson',
-      email: 'emma.thompson@email.com',
-      position: 'UX Designer',
-      matchScore: 92,
-      status: 'offer',
-      location: 'Remote',
-      experience: '5 years',
-      salary: '$110k',
-      appliedDate: '2024-01-15',
-      avatar: '👩‍🎨',
-      skills: ['UI/UX Design', 'Figma', 'User Research', 'Prototyping', 'Design Systems'],
-      education: 'MFA Design - RISD',
-      previousCompany: 'Airbnb',
-      phone: '+1 (555) 345-6789',
-      linkedin: 'linkedin.com/in/emmathompson',
-      summary: 'Creative UX designer passionate about creating intuitive user experiences...',
-      strengths: ['Creative vision', 'User empathy', 'Design thinking'],
-      concerns: ['Portfolio shows limited B2B experience']
-    },
-    {
-      id: 4,
-      name: 'David Kim',
-      email: 'david.kim@email.com',
-      position: 'DevOps Engineer',
-      matchScore: 85,
-      status: 'rejected',
-      location: 'Seattle, WA',
-      experience: '7 years',
-      salary: '$125k',
-      appliedDate: '2024-01-12',
-      avatar: '👨‍💻',
-      skills: ['AWS', 'Kubernetes', 'Docker', 'Terraform', 'CI/CD'],
-      education: 'BS Computer Science - University of Washington',
-      previousCompany: 'Microsoft',
-      phone: '+1 (555) 456-7890',
-      linkedin: 'linkedin.com/in/davidkim',
-      summary: 'Experienced DevOps engineer specializing in cloud infrastructure...',
-      strengths: ['Strong technical expertise', 'Automation mindset', 'Problem solving'],
-      concerns: ['Overqualified for the role', 'Salary expectations too high']
-    },
-    {
-      id: 5,
-      name: 'Lisa Wang',
-      email: 'lisa.wang@email.com',
-      position: 'Senior React Developer',
-      matchScore: 94,
-      status: 'new',
-      location: 'Austin, TX',
-      experience: '5 years',
-      salary: '$120k',
-      appliedDate: '2024-01-22',
-      avatar: '👩‍🔬',
-      skills: ['React', 'Vue.js', 'Node.js', 'Python', 'MongoDB'],
-      education: 'BS Software Engineering - UT Austin',
-      previousCompany: 'Spotify',
-      phone: '+1 (555) 567-8901',
-      linkedin: 'linkedin.com/in/lisawang',
-      summary: 'Full-stack developer with strong frontend focus and startup experience...',
-      strengths: ['Versatile skill set', 'Fast learner', 'Startup experience'],
-      concerns: ['Recent graduate, limited senior experience']
+  // Load candidates data from backend
+  useEffect(() => {
+    loadCandidates();
+  }, []);
+
+  const loadCandidates = async () => {
+    try {
+      setLoading(true);
+      console.log('Loading candidates...');
+      
+      const response = await apiCall('/api/admin/candidates');
+      console.log('Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Candidates data received:', data);
+        
+        if (data.success && Array.isArray(data.data)) {
+          setCandidates(data.data);
+          calculateStats(data.data);
+          console.log(`Loaded ${data.data.length} candidates successfully`);
+        } else {
+          console.error('Invalid data format received:', data);
+          setCandidates([]);
+          calculateStats([]);
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to load candidates:', errorData);
+        setCandidates([]);
+        calculateStats([]);
+      }
+    } catch (error) {
+      console.error('Error loading candidates:', error);
+      setCandidates([]);
+      calculateStats([]);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
+
+  const refreshCandidates = async () => {
+    try {
+      setRefreshing(true);
+      await loadCandidates();
+    } catch (error) {
+      console.error('Error refreshing candidates:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const calculateStats = (candidatesData) => {
+    const total = candidatesData.length;
+    const newCount = candidatesData.filter(c => c.status === 'new' || c.status === 'pending').length;
+    const screening = candidatesData.filter(c => c.status === 'screening' || c.status === 'reviewing').length;
+    const interview = candidatesData.filter(c => c.status === 'interview' || c.status === 'interview-scheduled').length;
+    const offer = candidatesData.filter(c => c.status === 'offer').length;
+    const hired = candidatesData.filter(c => c.status === 'hired').length;
+    const rejected = candidatesData.filter(c => c.status === 'rejected').length;
+    const avgMatch = total > 0 ? Math.round(candidatesData.reduce((sum, c) => sum + (c.matchScore || 0), 0) / total) : 0;
+
+    setStats({
+      total,
+      new: newCount,
+      screening,
+      interview,
+      offer,
+      hired,
+      rejected,
+      avgMatch
+    });
+  };
+
+  const updateCandidateStatus = async (candidateId, newStatus, notes = '') => {
+    try {
+      const response = await apiCall(`/api/applications/${candidateId}/${getActionFromStatus(newStatus)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+      });
+
+      if (response.ok) {
+        // Refresh candidates list
+        await loadCandidates();
+        
+        // Show success message (you might want to add a toast notification)
+        console.log('Candidate status updated successfully');
+      } else {
+        console.error('Failed to update candidate status');
+      }
+    } catch (error) {
+      console.error('Error updating candidate status:', error);
+    }
+  };
+
+  const getActionFromStatus = (status) => {
+    switch (status) {
+      case 'reviewing': return 'review';
+      case 'shortlisted': return 'shortlist';
+      case 'interview-scheduled': return 'schedule-interview';
+      case 'rejected': return 'reject';
+      case 'hired': return 'hire';
+      default: return 'review';
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return 'bg-gradient-to-r from-blue-400 to-cyan-500';
-      case 'screening': return 'bg-gradient-to-r from-yellow-400 to-orange-500';
-      case 'interview': return 'bg-gradient-to-r from-purple-400 to-pink-500';
+      case 'new':
+      case 'pending': return 'bg-gradient-to-r from-blue-400 to-cyan-500';
+      case 'screening':
+      case 'reviewing': return 'bg-gradient-to-r from-yellow-400 to-orange-500';
+      case 'interview':
+      case 'interview-scheduled': return 'bg-gradient-to-r from-purple-400 to-pink-500';
       case 'offer': return 'bg-gradient-to-r from-green-400 to-emerald-500';
       case 'hired': return 'bg-gradient-to-r from-emerald-500 to-teal-500';
       case 'rejected': return 'bg-gradient-to-r from-red-400 to-rose-500';
@@ -142,21 +160,33 @@ export default function CandidatesPage() {
     return '📊';
   };
 
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'pending': return 'new';
+      case 'reviewing': return 'screening';
+      case 'interview-scheduled': return 'interview';
+      case 'shortlisted': return 'interview';
+      default: return status;
+    }
+  };
+
   const filteredAndSortedCandidates = candidates
     .filter(candidate => {
       if (activeFilter === 'all') return true;
-      return candidate.status === activeFilter;
+      const formattedStatus = formatStatus(candidate.status);
+      return formattedStatus === activeFilter;
     })
     .filter(candidate =>
-      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+      candidate.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.skills?.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => {
       switch (sortBy) {
-        case 'score': return b.matchScore - a.matchScore;
-        case 'name': return a.name.localeCompare(b.name);
-        case 'date': return new Date(b.appliedDate) - new Date(a.appliedDate);
+        case 'score': return (b.matchScore || 0) - (a.matchScore || 0);
+        case 'name': return (a.name || '').localeCompare(b.name || '');
+        case 'date': return new Date(b.appliedDate || b.createdAt) - new Date(a.appliedDate || a.createdAt);
         default: return 0;
       }
     });
@@ -166,55 +196,72 @@ export default function CandidatesPage() {
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center space-x-6">
           <div className="relative">
-            <div className="text-6xl">{candidate.avatar}</div>
+            <div className="text-6xl">{candidate.avatar || '👤'}</div>
             <div className="absolute -bottom-2 -right-2 text-2xl">
-              {getScoreBadge(candidate.matchScore)}
+              {getScoreBadge(candidate.atsMatch || candidate.matchScore || 0)}
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-bold text-white mb-2">{candidate.name}</h3>
-            <p className="text-xl text-purple-300 mb-3">{candidate.position}</p>
-            <div className="flex items-center space-x-4 text-gray-400">
-              <span className="flex items-center space-x-1">
+            <h3 className="text-2xl font-bold text-white mb-2">{candidate.name || 'Unknown'}</h3>
+            <p className="text-xl text-purple-300 mb-2">{candidate.position || 'Position not specified'}</p>
+            <div className="flex items-center space-x-2 mb-3">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${candidate.isFresher ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'}`}>
+                {candidate.isFresher ? `Fresher` : `${candidate.experienceYears || 0} years exp`}
+              </span>
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                {candidate.noticePeriod || 'Notice period not specified'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
+              <div className="flex items-center space-x-1">
                 <span>📍</span>
-                <span>{candidate.location}</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <span>💼</span>
-                <span>{candidate.experience}</span>
-              </span>
-              <span className="flex items-center space-x-1">
-                <span>💰</span>
-                <span>{candidate.salary}</span>
-              </span>
+                <span>{candidate.location || 'Location not specified'}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span>📱</span>
+                <span>{candidate.mobile || candidate.phone || 'Phone not provided'}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span>📧</span>
+                <span className="truncate">{candidate.email || 'Email not provided'}</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span>🏢</span>
+                <span>{candidate.currentCompany || 'Current company not specified'}</span>
+              </div>
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col items-end space-y-3">
           <div className="text-center">
-            <div className={`text-4xl font-bold ${getScoreColor(candidate.matchScore)}`}>
-              {candidate.matchScore}%
+            <div className={`text-4xl font-bold ${getScoreColor(candidate.atsMatch || candidate.matchScore || 0)}`}>
+              {candidate.atsMatch || candidate.matchScore || 0}%
             </div>
-            <div className="text-sm text-gray-400">Match</div>
+            <div className="text-sm text-gray-400">ATS Match</div>
           </div>
           <div className={`px-4 py-2 rounded-full text-sm font-medium text-white ${getStatusColor(candidate.status)}`}>
-            {candidate.status.charAt(0).toUpperCase() + candidate.status.slice(1)}
+            {formatStatus(candidate.status).charAt(0).toUpperCase() + formatStatus(candidate.status).slice(1)}
           </div>
         </div>
       </div>
 
       <div className="mb-6">
-        <p className="text-gray-300 leading-relaxed">{candidate.summary}</p>
+        <p className="text-gray-300 leading-relaxed">{candidate.summary || candidate.bio || 'No summary available'}</p>
       </div>
 
       <div className="mb-6">
         <h4 className="text-white font-semibold mb-3">Skills:</h4>
         <div className="flex flex-wrap gap-2">
-          {candidate.skills.map((skill, index) => (
+          {(candidate.skills || []).map((skill, index) => (
             <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30">
               {skill}
             </span>
           ))}
+          {(!candidate.skills || candidate.skills.length === 0) && (
+            <span className="px-3 py-1 bg-gray-500/20 text-gray-300 text-sm rounded-lg border border-gray-500/30">
+              No skills listed
+            </span>
+          )}
         </div>
       </div>
 
@@ -222,37 +269,65 @@ export default function CandidatesPage() {
         <div>
           <h5 className="text-green-400 font-medium mb-2">✅ Strengths</h5>
           <ul className="text-sm text-gray-300 space-y-1">
-            {candidate.strengths.map((strength, index) => (
+            {(candidate.strengths || candidate.aiAnalysis?.strengths || []).map((strength, index) => (
               <li key={index}>• {strength}</li>
             ))}
+            {(!candidate.strengths && !candidate.aiAnalysis?.strengths) && (
+              <li>• Analysis pending</li>
+            )}
           </ul>
         </div>
         <div>
           <h5 className="text-yellow-400 font-medium mb-2">⚠️ Considerations</h5>
           <ul className="text-sm text-gray-300 space-y-1">
-            {candidate.concerns.map((concern, index) => (
+            {(candidate.concerns || candidate.aiAnalysis?.weaknesses || []).map((concern, index) => (
               <li key={index}>• {concern}</li>
             ))}
+            {(!candidate.concerns && !candidate.aiAnalysis?.weaknesses) && (
+              <li>• Analysis pending</li>
+            )}
           </ul>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 text-center">
-        <div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
           <div className="text-sm text-gray-400 mb-1">Education</div>
-          <div className="text-white font-medium text-sm">{candidate.education}</div>
+          <div className="text-white font-medium text-sm">{candidate.academicDetails?.degree || candidate.education || 'Not specified'}</div>
+          <div className="text-xs text-gray-500">{candidate.academicDetails?.university || ''}</div>
         </div>
-        <div>
-          <div className="text-sm text-gray-400 mb-1">Previous</div>
-          <div className="text-white font-medium text-sm">{candidate.previousCompany}</div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="text-sm text-gray-400 mb-1">Experience</div>
+          <div className="text-white font-medium text-sm">{candidate.totalExperience || 'Not specified'}</div>
+          <div className="text-xs text-gray-500">Total Experience</div>
         </div>
-        <div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="text-sm text-gray-400 mb-1">Notice Period</div>
+          <div className="text-white font-medium text-sm">{candidate.noticePeriod || 'Not specified'}</div>
+        </div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="text-sm text-gray-400 mb-1">ABC ID</div>
+          <div className="text-white font-medium text-sm">
+            {candidate.academicDetails?.abcId || 'Not available'}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 text-center">
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="text-sm text-gray-400 mb-1">Expected Salary</div>
+          <div className="text-green-400 font-medium text-sm">{candidate.expectedSalary || 'Not specified'}</div>
+        </div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <div className="text-sm text-gray-400 mb-1">Work Authorization</div>
+          <div className="text-blue-400 font-medium text-sm">{candidate.workAuthorization || 'Not specified'}</div>
+        </div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
           <div className="text-sm text-gray-400 mb-1">Applied</div>
-          <div className="text-white font-medium text-sm">{new Date(candidate.appliedDate).toLocaleDateString()}</div>
-        </div>
-        <div>
-          <div className="text-sm text-gray-400 mb-1">Contact</div>
-          <div className="text-blue-400 font-medium text-sm hover:underline cursor-pointer">{candidate.email}</div>
+          <div className="text-white font-medium text-sm">
+            {candidate.appliedDate ? new Date(candidate.appliedDate).toLocaleDateString() : 
+             candidate.createdAt ? new Date(candidate.createdAt).toLocaleDateString() : 'Unknown'}
+          </div>
         </div>
       </div>
 
@@ -263,15 +338,52 @@ export default function CandidatesPage() {
         >
           View Details
         </button>
-        <button className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105">
-          Schedule Interview
-        </button>
+        
+        {candidate.status === 'pending' && (
+          <button 
+            onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'reviewing')}
+            className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+          >
+            Review
+          </button>
+        )}
+        
+        {(candidate.status === 'reviewing' || candidate.status === 'pending') && (
+          <button 
+            onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'shortlisted')}
+            className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+          >
+            Shortlist
+          </button>
+        )}
+        
+        {candidate.status === 'shortlisted' && (
+          <button 
+            onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'interview-scheduled')}
+            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+          >
+            Schedule Interview
+          </button>
+        )}
+        
         <button className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">
           💬
         </button>
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Loading Candidates...</p>
+          <p className="text-gray-400 text-sm mt-2">Connecting to database...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
@@ -282,14 +394,24 @@ export default function CandidatesPage() {
         <div className="absolute bottom-20 left-1/4 w-72 h-72 bg-gradient-to-br from-green-400/8 to-cyan-600/8 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
 
-      <Navbar softwareName="Akshay ATS Pro" />
+      <Navbar />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl md:text-8xl font-black mb-8 bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            👥 Candidates Hub
-          </h1>
+          <div className="flex items-center justify-center space-x-4 mb-8">
+            <h1 className="text-6xl md:text-8xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              👥 Candidates Hub
+            </h1>
+            <button 
+              onClick={refreshCandidates}
+              disabled={refreshing}
+              className={`p-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 hover:border-white/40 transition-all duration-300 ${refreshing ? 'animate-spin' : 'hover:scale-110'}`}
+              title="Refresh Candidates"
+            >
+              <span className="text-2xl">{refreshing ? '⏳' : '🔄'}</span>
+            </button>
+          </div>
           <p className="text-2xl md:text-3xl text-gray-300 max-w-4xl mx-auto font-light">
             Discover and manage your talent pipeline with AI-powered insights
           </p>
@@ -339,30 +461,40 @@ export default function CandidatesPage() {
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8 text-center">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8 text-center">
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
             <div className="text-3xl mb-3">👥</div>
-            <div className="text-2xl font-bold text-blue-400 mb-2">{candidates.length}</div>
+            <div className="text-2xl font-bold text-blue-400 mb-2">{stats.total}</div>
             <div className="text-gray-300 text-sm">Total</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
             <div className="text-3xl mb-3">🆕</div>
-            <div className="text-2xl font-bold text-green-400 mb-2">{candidates.filter(c => c.status === 'new').length}</div>
+            <div className="text-2xl font-bold text-green-400 mb-2">{stats.new}</div>
             <div className="text-gray-300 text-sm">New</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
+            <div className="text-3xl mb-3">👀</div>
+            <div className="text-2xl font-bold text-yellow-400 mb-2">{stats.screening}</div>
+            <div className="text-gray-300 text-sm">Screening</div>
+          </div>
+          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
             <div className="text-3xl mb-3">🎤</div>
-            <div className="text-2xl font-bold text-purple-400 mb-2">{candidates.filter(c => c.status === 'interview').length}</div>
+            <div className="text-2xl font-bold text-purple-400 mb-2">{stats.interview}</div>
             <div className="text-gray-300 text-sm">Interview</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
             <div className="text-3xl mb-3">💼</div>
-            <div className="text-2xl font-bold text-yellow-400 mb-2">{candidates.filter(c => c.status === 'offer').length}</div>
+            <div className="text-2xl font-bold text-cyan-400 mb-2">{stats.offer}</div>
             <div className="text-gray-300 text-sm">Offers</div>
           </div>
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
+            <div className="text-3xl mb-3">🎉</div>
+            <div className="text-2xl font-bold text-emerald-400 mb-2">{stats.hired}</div>
+            <div className="text-gray-300 text-sm">Hired</div>
+          </div>
+          <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
             <div className="text-3xl mb-3">🏆</div>
-            <div className="text-2xl font-bold text-emerald-400 mb-2">{Math.round(candidates.reduce((sum, c) => sum + c.matchScore, 0) / candidates.length)}%</div>
+            <div className="text-2xl font-bold text-orange-400 mb-2">{stats.avgMatch}%</div>
             <div className="text-gray-300 text-sm">Avg Match</div>
           </div>
         </div>
@@ -371,19 +503,218 @@ export default function CandidatesPage() {
         <div className="space-y-8">
           {filteredAndSortedCandidates.length > 0 ? (
             filteredAndSortedCandidates.map((candidate) => (
-              <CandidateCard key={candidate.id} candidate={candidate} />
+              <CandidateCard key={candidate._id || candidate.id} candidate={candidate} />
             ))
           ) : (
             <div className="text-center py-16">
               <div className="text-8xl mb-6">🔍</div>
               <h3 className="text-3xl font-bold text-gray-400 mb-4">No candidates found</h3>
-              <p className="text-gray-500 text-lg">Try adjusting your search or filters</p>
+              <p className="text-gray-500 text-lg">
+                {candidates.length === 0 ? 'No candidates in the system yet' : 'Try adjusting your search or filters'}
+              </p>
             </div>
           )}
         </div>
       </div>
 
       <Footer />
+
+      {/* Detailed Candidate Modal */}
+      {selectedCandidate && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl p-8 max-w-4xl max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="text-6xl">{selectedCandidate.avatar}</div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">{selectedCandidate.name}</h2>
+                  <p className="text-xl text-purple-300">{selectedCandidate.position}</p>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedCandidate.status)}`}>
+                      {formatStatus(selectedCandidate.status)}
+                    </span>
+                    <span className={`text-2xl font-bold ${getScoreColor(selectedCandidate.atsMatch)}`}>
+                      {selectedCandidate.atsMatch}% ATS Match
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedCandidate(null)}
+                className="text-gray-400 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Contact Information */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">📞 Contact Information</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Email:</span>
+                    <span className="text-blue-400">{selectedCandidate.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Mobile:</span>
+                    <span className="text-white">{selectedCandidate.mobile}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Location:</span>
+                    <span className="text-white">{selectedCandidate.location}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">LinkedIn:</span>
+                    <span className="text-blue-400 text-sm">{selectedCandidate.linkedin || 'Not provided'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Details */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">💼 Professional Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Experience:</span>
+                    <span className="text-white">{selectedCandidate.isFresher ? 'Fresher' : selectedCandidate.totalExperience}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Current Company:</span>
+                    <span className="text-white">{selectedCandidate.currentCompany}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Notice Period:</span>
+                    <span className="text-yellow-400">{selectedCandidate.noticePeriod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Expected Salary:</span>
+                    <span className="text-green-400">{selectedCandidate.expectedSalary}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Details */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">🎓 Academic Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Degree:</span>
+                    <span className="text-white">{selectedCandidate.academicDetails?.degree}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">University:</span>
+                    <span className="text-white text-sm">{selectedCandidate.academicDetails?.university}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Graduation Year:</span>
+                    <span className="text-white">{selectedCandidate.academicDetails?.graduationYear}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">GPA:</span>
+                    <span className="text-white">{selectedCandidate.academicDetails?.gpa}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">ABC ID:</span>
+                    <span className={selectedCandidate.academicDetails?.abcId ? "text-green-400" : "text-gray-500"}>
+                      {selectedCandidate.academicDetails?.abcId || 'Not available'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">ℹ️ Additional Information</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Work Authorization:</span>
+                    <span className="text-white text-sm">{selectedCandidate.workAuthorization}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Availability:</span>
+                    <span className="text-white">{selectedCandidate.availability}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Application Source:</span>
+                    <span className="text-white">{selectedCandidate.applicationSource}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Languages:</span>
+                    <span className="text-white text-sm">{selectedCandidate.languages?.join(', ')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills Section */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+              <h3 className="text-xl font-bold text-white mb-4">🛠️ Skills & Expertise</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedCandidate.skills?.map((skill, index) => (
+                  <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Analysis */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-green-400 mb-4">✅ Strengths</h3>
+                <ul className="space-y-2">
+                  {selectedCandidate.strengths?.map((strength, index) => (
+                    <li key={index} className="text-gray-300 text-sm">• {strength}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-yellow-400 mb-4">⚠️ Areas for Improvement</h3>
+                <ul className="space-y-2">
+                  {selectedCandidate.concerns?.map((concern, index) => (
+                    <li key={index} className="text-gray-300 text-sm">• {concern}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-4">
+              {selectedCandidate.status === 'pending' && (
+                <button 
+                  onClick={() => {
+                    updateCandidateStatus(selectedCandidate._id, 'reviewing');
+                    setSelectedCandidate(null);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300"
+                >
+                  Review Application
+                </button>
+              )}
+              
+              {(selectedCandidate.status === 'reviewing' || selectedCandidate.status === 'pending') && (
+                <button 
+                  onClick={() => {
+                    updateCandidateStatus(selectedCandidate._id, 'shortlisted');
+                    setSelectedCandidate(null);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300"
+                >
+                  Shortlist Candidate
+                </button>
+              )}
+              
+              <button 
+                onClick={() => setSelectedCandidate(null)}
+                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -44,7 +44,23 @@ const userSchema = new mongoose.Schema({
       uploadDate: Date
     },
     linkedIn: String,
-    portfolio: String
+    portfolio: String,
+    // Enhanced profile fields
+    currentCompany: String,
+    expectedSalary: String,
+    noticePeriod: String,
+    workAuthorization: String,
+    availability: String,
+    totalExperience: String,
+    relevantExperience: String,
+    degree: String,
+    university: String,
+    graduationYear: Number,
+    gpa: String,
+    abcId: String,
+    certifications: [String],
+    languages: [String],
+    preferredLocation: String
   },
   isActive: {
     type: Boolean,
