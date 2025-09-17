@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
@@ -56,7 +56,7 @@ class ErrorBoundary extends React.Component {
 
 // App Content Component (inside AuthProvider)
 function AppContent() {
-  const { isAuthenticated, loading, user } = useAuth();
+  const { isAuthenticated, loading, user, logout } = useAuth();
 
   if (loading) {
     return (
@@ -69,44 +69,110 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <AuthPage />;
-  }
-
   return (
-    <div className="app-container">
-      <Routes>
-        <Route path="/" element={
+    <Routes>
+      {/* Public routes - Always accessible */}
+      <Route path="/login" element={
+        !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
+      } />
+      
+      {/* Protected routes - Require authentication */}
+      <Route path="/" element={
+        isAuthenticated ? (
           <ProtectedRoute>
             {user?.role === 'admin' ? <DashboardPage /> : <JobSeekerDashboard />}
           </ProtectedRoute>
-        } />
-        <Route path="/ats" element={
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      
+      <Route path="/ats" element={
+        isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
             <ATSPage />
           </ProtectedRoute>
-        } />
-        <Route path="/analytics" element={
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      
+      <Route path="/analytics" element={
+        isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
             <AnalyticsPage />
           </ProtectedRoute>
-        } />
-        <Route path="/jobs" element={
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      
+      <Route path="/jobs" element={
+        isAuthenticated ? (
           <ProtectedRoute>
             {user?.role === 'admin' ? <JobsPage /> : <JobSeekerJobsPage />}
           </ProtectedRoute>
-        } />
-        <Route path="/profile" element={
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      
+      <Route path="/profile" element={
+        isAuthenticated ? (
           <ProtectedRoute>
             <ProfilePage />
           </ProtectedRoute>
-        } />
-        <Route path="/candidates" element={
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+      
+      <Route path="/candidates" element={
+        isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
             <CandidatesPage />
           </ProtectedRoute>
-        } />
-      </Routes>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+
+      {/* Logout route */}
+      <Route path="/logout" element={<LogoutHandler />} />
+      
+      {/* Catch all - redirect to appropriate page */}
+      <Route path="*" element={
+        <Navigate to={isAuthenticated ? "/" : "/login"} replace />
+      } />
+    </Routes>
+  );
+}
+
+// Logout Handler Component
+function LogoutHandler() {
+  const { logout } = useAuth();
+  
+  React.useEffect(() => {
+    const handleLogout = async () => {
+      try {
+        await logout();
+        // Navigation will be handled by the routing system
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Force logout even if API call fails
+        window.location.href = '/login';
+      }
+    };
+    
+    handleLogout();
+  }, [logout]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-300">Signing out...</p>
+      </div>
     </div>
   );
 }

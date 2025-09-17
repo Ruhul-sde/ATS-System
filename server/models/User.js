@@ -32,35 +32,99 @@ const userSchema = new mongoose.Schema({
     required: true
   },
   profile: {
+    // Personal Information
     phone: String,
-    location: String,
-    bio: String,
-    skills: [String],
-    experience: String,
-    education: String,
-    resume: {
-      fileName: String,
-      fileUrl: String,
-      uploadDate: Date
+    alternatePhone: String,
+    dateOfBirth: Date,
+    gender: {
+      type: String,
+      enum: ['', 'Male', 'Female', 'Other', 'Prefer not to say'],
+      default: ''
     },
-    linkedIn: String,
-    portfolio: String,
-    // Enhanced profile fields
+    // Address Information
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      postalCode: String,
+      country: {
+        type: String,
+        default: 'India'
+      }
+    },
+    // Professional Information
+    bio: String,
     currentCompany: String,
+    currentDesignation: String,
+    totalExperience: String,
+    relevantExperience: String,
+    skills: [String],
     expectedSalary: String,
+    currentSalary: String,
     noticePeriod: String,
     workAuthorization: String,
     availability: String,
-    totalExperience: String,
-    relevantExperience: String,
+    preferredLocation: [String],
+    workPreferences: [String],
+    // Academic Information
+    education: String,
     degree: String,
     university: String,
     graduationYear: Number,
     gpa: String,
     abcId: String,
+    // Additional Information
     certifications: [String],
-    languages: [String],
-    preferredLocation: String
+    languages: [{
+      name: String,
+      proficiency: {
+        type: String,
+        enum: ['Basic', 'Conversational', 'Proficient', 'Advanced', 'Native']
+      }
+    }],
+    // Social Links
+    linkedIn: String,
+    portfolio: String,
+    github: String,
+    // Resume
+    resume: {
+      fileName: String,
+      fileUrl: String,
+      uploadDate: Date
+    },
+    // Profile Picture
+    profilePicture: {
+      fileName: String,
+      fileUrl: String,
+      uploadDate: Date
+    },
+    // Legal and Consent
+    consents: {
+      dataProcessing: {
+        type: Boolean,
+        default: false
+      },
+      backgroundVerification: {
+        type: Boolean,
+        default: false
+      },
+      contactConsent: {
+        type: Boolean,
+        default: false
+      },
+      thirdPartySharing: {
+        type: Boolean,
+        default: false
+      },
+      marketingCommunication: {
+        type: Boolean,
+        default: false
+      },
+      consentDate: {
+        type: Date,
+        default: Date.now
+      }
+    }
   },
   isActive: {
     type: Boolean,

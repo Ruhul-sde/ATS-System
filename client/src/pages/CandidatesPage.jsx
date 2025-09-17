@@ -196,7 +196,17 @@ export default function CandidatesPage() {
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center space-x-6">
           <div className="relative">
-            <div className="text-6xl">{candidate.avatar || '👤'}</div>
+            {candidate.profilePicture?.fileUrl ? (
+              <img
+                src={candidate.profilePicture.fileUrl}
+                alt={candidate.name}
+                className="w-16 h-16 rounded-full object-cover border-2 border-blue-500"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl">
+                {candidate.name ? candidate.name.charAt(0).toUpperCase() : '👤'}
+              </div>
+            )}
             <div className="absolute -bottom-2 -right-2 text-2xl">
               {getScoreBadge(candidate.atsMatch || candidate.matchScore || 0)}
             </div>
@@ -338,6 +348,18 @@ export default function CandidatesPage() {
         >
           View Details
         </button>
+        
+        {candidate.resume?.fileUrl && (
+          <a
+            href={candidate.resume.fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+            title="View Resume"
+          >
+            📄
+          </a>
+        )}
         
         {candidate.status === 'pending' && (
           <button 
@@ -522,10 +544,22 @@ export default function CandidatesPage() {
       {/* Detailed Candidate Modal */}
       {selectedCandidate && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl p-8 max-w-4xl max-h-[90vh] overflow-y-auto border border-white/20">
+          <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl p-8 max-w-6xl max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center space-x-4">
-                <div className="text-6xl">{selectedCandidate.avatar}</div>
+                <div className="relative">
+                  {selectedCandidate.profilePicture?.fileUrl ? (
+                    <img
+                      src={selectedCandidate.profilePicture.fileUrl}
+                      alt={selectedCandidate.name}
+                      className="w-20 h-20 rounded-full object-cover border-4 border-blue-500"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl">
+                      {selectedCandidate.name ? selectedCandidate.name.charAt(0).toUpperCase() : '👤'}
+                    </div>
+                  )}
+                </div>
                 <div>
                   <h2 className="text-3xl font-bold text-white">{selectedCandidate.name}</h2>
                   <p className="text-xl text-purple-300">{selectedCandidate.position}</p>
@@ -533,8 +567,8 @@ export default function CandidatesPage() {
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedCandidate.status)}`}>
                       {formatStatus(selectedCandidate.status)}
                     </span>
-                    <span className={`text-2xl font-bold ${getScoreColor(selectedCandidate.atsMatch)}`}>
-                      {selectedCandidate.atsMatch}% ATS Match
+                    <span className={`text-2xl font-bold ${getScoreColor(selectedCandidate.atsMatch || selectedCandidate.matchScore || 0)}`}>
+                      {selectedCandidate.atsMatch || selectedCandidate.matchScore || 0}% ATS Match
                     </span>
                   </div>
                 </div>
@@ -547,144 +581,394 @@ export default function CandidatesPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Contact Information */}
+            {/* Complete Profile Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* Personal Information */}
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4">📞 Contact Information</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">👤</span> Personal Information
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">First Name:</span>
+                    <span className="text-white">{selectedCandidate.firstName || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Last Name:</span>
+                    <span className="text-white">{selectedCandidate.lastName || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">Email:</span>
-                    <span className="text-blue-400">{selectedCandidate.email}</span>
+                    <span className="text-blue-400 break-all">{selectedCandidate.email}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Mobile:</span>
-                    <span className="text-white">{selectedCandidate.mobile}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Phone:</span>
+                    <span className="text-white">{selectedCandidate.phone || selectedCandidate.mobile || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Location:</span>
-                    <span className="text-white">{selectedCandidate.location}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Alt Phone:</span>
+                    <span className="text-white">{selectedCandidate.alternatePhone || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">LinkedIn:</span>
-                    <span className="text-blue-400 text-sm">{selectedCandidate.linkedin || 'Not provided'}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Date of Birth:</span>
+                    <span className="text-white">
+                      {selectedCandidate.dateOfBirth ? new Date(selectedCandidate.dateOfBirth).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Gender:</span>
+                    <span className="text-white">{selectedCandidate.gender || 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Professional Details */}
+              {/* Address Information */}
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4">💼 Professional Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Experience:</span>
-                    <span className="text-white">{selectedCandidate.isFresher ? 'Fresher' : selectedCandidate.totalExperience}</span>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📍</span> Address Information
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Street:</span>
+                    <span className="text-white">{selectedCandidate.address?.street || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">City:</span>
+                    <span className="text-white">{selectedCandidate.address?.city || selectedCandidate.location || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">State:</span>
+                    <span className="text-white">{selectedCandidate.address?.state || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Postal Code:</span>
+                    <span className="text-white">{selectedCandidate.address?.postalCode || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Country:</span>
+                    <span className="text-white">{selectedCandidate.address?.country || 'India'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Summary */}
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📄</span> Professional Summary
+                </h3>
+                <div className="text-sm text-gray-300 leading-relaxed">
+                  {selectedCandidate.bio || selectedCandidate.summary || 'No professional summary provided'}
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Details */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">💼</span> Professional Details
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">Current Company:</span>
-                    <span className="text-white">{selectedCandidate.currentCompany}</span>
+                    <span className="text-white">{selectedCandidate.currentCompany || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Notice Period:</span>
-                    <span className="text-yellow-400">{selectedCandidate.noticePeriod}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Designation:</span>
+                    <span className="text-white">{selectedCandidate.currentDesignation || selectedCandidate.position || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Total Experience:</span>
+                    <span className="text-white">{selectedCandidate.totalExperience || (selectedCandidate.isFresher ? 'Fresher' : 'N/A')}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Relevant Experience:</span>
+                    <span className="text-white">{selectedCandidate.relevantExperience || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Current Salary:</span>
+                    <span className="text-green-400">{selectedCandidate.currentSalary || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">Expected Salary:</span>
-                    <span className="text-green-400">{selectedCandidate.expectedSalary}</span>
+                    <span className="text-green-400">{selectedCandidate.expectedSalary || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Notice Period:</span>
+                    <span className="text-yellow-400">{selectedCandidate.noticePeriod || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Work Authorization:</span>
+                    <span className="text-white">{selectedCandidate.workAuthorization || 'N/A'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Availability:</span>
+                    <span className="text-white">{selectedCandidate.availability || 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Academic Details */}
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4">🎓 Academic Details</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">🎓</span> Academic Information
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">Degree:</span>
-                    <span className="text-white">{selectedCandidate.academicDetails?.degree}</span>
+                    <span className="text-white">{selectedCandidate.degree || selectedCandidate.academicDetails?.degree || selectedCandidate.education || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">University:</span>
-                    <span className="text-white text-sm">{selectedCandidate.academicDetails?.university}</span>
+                    <span className="text-white text-xs">{selectedCandidate.university || selectedCandidate.academicDetails?.university || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">Graduation Year:</span>
-                    <span className="text-white">{selectedCandidate.academicDetails?.graduationYear}</span>
+                    <span className="text-white">{selectedCandidate.graduationYear || selectedCandidate.academicDetails?.graduationYear || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">GPA:</span>
-                    <span className="text-white">{selectedCandidate.academicDetails?.gpa}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">GPA/Percentage:</span>
+                    <span className="text-white">{selectedCandidate.gpa || selectedCandidate.academicDetails?.gpa || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-2">
                     <span className="text-gray-400">ABC ID:</span>
-                    <span className={selectedCandidate.academicDetails?.abcId ? "text-green-400" : "text-gray-500"}>
-                      {selectedCandidate.academicDetails?.abcId || 'Not available'}
+                    <span className={selectedCandidate.abcId || selectedCandidate.academicDetails?.abcId ? "text-green-400" : "text-gray-500"}>
+                      {selectedCandidate.abcId || selectedCandidate.academicDetails?.abcId || 'Not available'}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-400 block mb-2">Additional Education:</span>
+                    <span className="text-white text-xs leading-relaxed">
+                      {selectedCandidate.education || selectedCandidate.academicDetails?.additionalEducation || 'No additional education details'}
                     </span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Additional Information */}
+            {/* Skills and Languages */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-white mb-4">ℹ️ Additional Information</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Work Authorization:</span>
-                    <span className="text-white text-sm">{selectedCandidate.workAuthorization}</span>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">🛠️</span> Technical Skills
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {(selectedCandidate.skills || []).length > 0 ? (
+                    selectedCandidate.skills.map((skill, index) => (
+                      <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-lg border border-blue-500/30">
+                        {skill}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 text-sm">No skills listed</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">🗣️</span> Languages
+                </h3>
+                <div className="space-y-2">
+                  {(selectedCandidate.languages || []).length > 0 ? (
+                    selectedCandidate.languages.map((lang, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-white text-sm">{typeof lang === 'string' ? lang : lang.name}</span>
+                        <span className="text-blue-400 text-xs">
+                          {typeof lang === 'object' ? lang.proficiency : 'Not specified'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-gray-500 text-sm">No languages specified</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Preferences and Additional Info */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📍</span> Work Preferences
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-400 block mb-2">Preferred Locations:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {(selectedCandidate.preferredLocation || []).length > 0 ? (
+                        selectedCandidate.preferredLocation.map((location, index) => (
+                          <span key={index} className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded border border-purple-500/30">
+                            {location}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No preferences specified</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Availability:</span>
-                    <span className="text-white">{selectedCandidate.availability}</span>
+                  <div>
+                    <span className="text-gray-400 block mb-2">Work Type Preferences:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {(selectedCandidate.workPreferences || []).length > 0 ? (
+                        selectedCandidate.workPreferences.map((pref, index) => (
+                          <span key={index} className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded border border-green-500/30">
+                            {pref}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No preferences specified</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Application Source:</span>
-                    <span className="text-white">{selectedCandidate.applicationSource}</span>
+                </div>
+              </div>
+
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">🔗</span> Links & Social Profiles
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">LinkedIn:</span>
+                    <span className="text-blue-400 text-xs break-all">
+                      {selectedCandidate.linkedIn || selectedCandidate.linkedin || 'Not provided'}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Languages:</span>
-                    <span className="text-white text-sm">{selectedCandidate.languages?.join(', ')}</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">Portfolio:</span>
+                    <span className="text-blue-400 text-xs break-all">
+                      {selectedCandidate.portfolio || 'Not provided'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <span className="text-gray-400">GitHub:</span>
+                    <span className="text-blue-400 text-xs break-all">
+                      {selectedCandidate.github || 'Not provided'}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Skills Section */}
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
-              <h3 className="text-xl font-bold text-white mb-4">🛠️ Skills & Expertise</h3>
-              <div className="flex flex-wrap gap-2">
-                {selectedCandidate.skills?.map((skill, index) => (
-                  <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30">
-                    {skill}
-                  </span>
-                ))}
+            {/* Certifications */}
+            {(selectedCandidate.certifications || []).length > 0 && (
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">🏆</span> Certifications
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCandidate.certifications.map((cert, index) => (
+                    <span key={index} className="px-3 py-1 bg-orange-500/20 text-orange-300 text-sm rounded-lg border border-orange-500/30">
+                      {cert}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Resume Information */}
+            {selectedCandidate.resume && (
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">📄</span> Resume Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400 block">File Name:</span>
+                    <span className="text-white">{selectedCandidate.resume.fileName || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Upload Date:</span>
+                    <span className="text-white">
+                      {selectedCandidate.resume.uploadDate ? 
+                        new Date(selectedCandidate.resume.uploadDate).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Action:</span>
+                    {selectedCandidate.resume.fileUrl && (
+                      <a 
+                        href={selectedCandidate.resume.fileUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-white underline"
+                      >
+                        View Resume
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* AI Analysis */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-green-400 mb-4">✅ Strengths</h3>
-                <ul className="space-y-2">
-                  {selectedCandidate.strengths?.map((strength, index) => (
-                    <li key={index} className="text-gray-300 text-sm">• {strength}</li>
-                  ))}
-                </ul>
+            {(selectedCandidate.strengths || selectedCandidate.concerns || selectedCandidate.aiAnalysis) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center">
+                    <span className="mr-2">✅</span> Strengths
+                  </h3>
+                  <ul className="space-y-2">
+                    {(selectedCandidate.strengths || selectedCandidate.aiAnalysis?.strengths || []).map((strength, index) => (
+                      <li key={index} className="text-gray-300 text-sm">• {strength}</li>
+                    ))}
+                    {(!selectedCandidate.strengths && !selectedCandidate.aiAnalysis?.strengths) && (
+                      <li className="text-gray-500 text-sm">• Analysis pending</li>
+                    )}
+                  </ul>
+                </div>
+                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                  <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center">
+                    <span className="mr-2">⚠️</span> Areas for Consideration
+                  </h3>
+                  <ul className="space-y-2">
+                    {(selectedCandidate.concerns || selectedCandidate.aiAnalysis?.weaknesses || []).map((concern, index) => (
+                      <li key={index} className="text-gray-300 text-sm">• {concern}</li>
+                    ))}
+                    {(!selectedCandidate.concerns && !selectedCandidate.aiAnalysis?.weaknesses) && (
+                      <li className="text-gray-500 text-sm">• Analysis pending</li>
+                    )}
+                  </ul>
+                </div>
               </div>
-              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <h3 className="text-xl font-bold text-yellow-400 mb-4">⚠️ Areas for Improvement</h3>
-                <ul className="space-y-2">
-                  {selectedCandidate.concerns?.map((concern, index) => (
-                    <li key={index} className="text-gray-300 text-sm">• {concern}</li>
-                  ))}
-                </ul>
+            )}
+
+            {/* Application Details */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                <span className="mr-2">📊</span> Application Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400 block">Applied Date:</span>
+                  <span className="text-white">
+                    {selectedCandidate.appliedDate ? new Date(selectedCandidate.appliedDate).toLocaleDateString() : 
+                     selectedCandidate.createdAt ? new Date(selectedCandidate.createdAt).toLocaleDateString() : 'Unknown'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Application Source:</span>
+                  <span className="text-white">{selectedCandidate.applicationSource || 'Direct Application'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">ATS Match Score:</span>
+                  <span className={`font-bold ${getScoreColor(selectedCandidate.atsMatch || selectedCandidate.matchScore || 0)}`}>
+                    {selectedCandidate.atsMatch || selectedCandidate.matchScore || 0}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Profile Views:</span>
+                  <span className="text-white">{selectedCandidate.profileViews || 0}</span>
+                </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 pt-4 border-t border-white/10">
               {selectedCandidate.status === 'pending' && (
                 <button 
                   onClick={() => {
-                    updateCandidateStatus(selectedCandidate._id, 'reviewing');
+                    updateCandidateStatus(selectedCandidate._id || selectedCandidate.id, 'reviewing');
                     setSelectedCandidate(null);
                   }}
                   className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300"
@@ -696,12 +980,24 @@ export default function CandidatesPage() {
               {(selectedCandidate.status === 'reviewing' || selectedCandidate.status === 'pending') && (
                 <button 
                   onClick={() => {
-                    updateCandidateStatus(selectedCandidate._id, 'shortlisted');
+                    updateCandidateStatus(selectedCandidate._id || selectedCandidate.id, 'shortlisted');
                     setSelectedCandidate(null);
                   }}
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300"
                 >
                   Shortlist Candidate
+                </button>
+              )}
+              
+              {selectedCandidate.status === 'shortlisted' && (
+                <button 
+                  onClick={() => {
+                    updateCandidateStatus(selectedCandidate._id || selectedCandidate.id, 'interview-scheduled');
+                    setSelectedCandidate(null);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300"
+                >
+                  Schedule Interview
                 </button>
               )}
               

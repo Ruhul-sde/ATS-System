@@ -13,7 +13,7 @@ import User from './models/User.js';
 import JobApplication from './models/JobApplication.js';
 import authRoutes from './routes/auth.js';
 import jobSeekerRoutes from './routes/jobSeeker.js';
-
+import fs from 'fs'; // Import fs module
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,30 +26,29 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    const allowedOrigins = [
-      'http://localhost:5000',
-      'http://0.0.0.0:5000',
-      'http://localhost:5173',
-      'http://0.0.0.0:5173'
-    ];
-
-    // Check for replit domains
-    const replitRegex = /^https:\/\/[a-zA-Z0-9-]+\.replit\.(dev|co)$/;
-
-    if (allowedOrigins.includes(origin) || replitRegex.test(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Ensure upload directories exist
+const uploadDirs = [
+  path.join(__dirname, '../uploads'),
+  path.join(__dirname, '../uploads/resumes'),
+  path.join(__dirname, '../uploads/profile-pictures')
+];
+
+uploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -66,9 +65,6 @@ const upload = multer({
     }
   }
 });
-
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -116,33 +112,33 @@ app.get('/api/admin/dashboard/stats', async (req, res) => {
   try {
     // Get total resumes count (using JobApplication as proxy)
     const totalApplications = await JobApplication.countDocuments();
-    
+
     // Get processed applications (non-pending status)
     const processed = await JobApplication.countDocuments({
       status: { $nin: ['pending'] }
     });
-    
+
     // Get high match candidates (example: interview-scheduled or hired)
     const matched = await JobApplication.countDocuments({
       status: { $in: ['interview-scheduled', 'hired', 'shortlisted'] }
     });
-    
+
     // Get pending applications
     const pending = await JobApplication.countDocuments({
       status: 'pending'
     });
-    
+
     // Get active jobs
     const activeJobs = await JobRole.countDocuments({
       status: 'active',
       isActive: true
     });
-    
+
     // Get interviews scheduled
     const interviewsScheduled = await JobApplication.countDocuments({
       status: 'interview-scheduled'
     });
-    
+
     // Get hired candidates
     const hiredCandidates = await JobApplication.countDocuments({
       status: 'hired'
@@ -249,7 +245,7 @@ app.get('/api/admin/dashboard/jobs', async (req, res) => {
 
     const jobsWithStats = await Promise.all(jobs.map(async (job) => {
       const applicationCount = await JobApplication.countDocuments({ job: job._id });
-      
+
       return {
         id: job._id,
         title: job.title,
@@ -280,7 +276,7 @@ app.get('/api/admin/candidates', async (req, res) => {
   try {
     console.log('Fetching candidates...');
     const { status, search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-    
+
     // Build query filter
     const filter = {};
     if (status && status !== 'all') {
@@ -323,15 +319,15 @@ app.get('/api/admin/candidates', async (req, res) => {
     const candidates = applications.map((app) => {
       const applicant = app.applicant;
       const job = app.job;
-      
+
       // Calculate match score from AI analysis or default
       const matchScore = app.aiAnalysis?.matchPercentage || Math.floor(Math.random() * 30) + 70;
-      
+
       // Get skills from profile or AI analysis
       const skills = applicant?.profile?.skills || 
                    app.aiAnalysis?.matchingSkills || 
                    ['JavaScript', 'React', 'Node.js'];
-      
+
       // Format salary from job posting
       const formatSalary = (salaryRange) => {
         if (!salaryRange || (!salaryRange.min && !salaryRange.max)) return 'Competitive';
@@ -435,16 +431,16 @@ app.get('/api/admin/candidates', async (req, res) => {
 // Helper functions for enhanced candidate data
 function extractPreviousCompany(text) {
   if (!text) return 'Not specified';
-  
+
   const companyKeywords = ['worked at', 'employed by', 'company:', 'organization:', 'at '];
   const companies = ['Google', 'Microsoft', 'Apple', 'Meta', 'Amazon', 'Netflix', 'Spotify', 'Uber', 'Airbnb', 'TCS', 'Infosys', 'Wipro', 'Accenture'];
-  
+
   for (const company of companies) {
     if (text.toLowerCase().includes(company.toLowerCase())) {
       return company;
     }
   }
-  
+
   return 'Previous company not specified';
 }
 
@@ -455,14 +451,14 @@ function formatExperience(experience) {
 
 function extractExperienceYears(experience) {
   if (!experience) return 0;
-  
+
   const match = experience.match(/(\d+)[\s]*(?:year|yr)/i);
   return match ? parseInt(match[1]) : Math.floor(Math.random() * 8) + 1;
 }
 
 function isCandidateFresher(experience) {
   if (!experience) return true;
-  
+
   const years = extractExperienceYears(experience);
   return years <= 1;
 }
@@ -479,7 +475,7 @@ function generateNoticePeriod() {
 
 function extractCurrentCompany(bio) {
   if (!bio) return 'Not specified';
-  
+
   const companies = ['Google', 'Microsoft', 'Apple', 'Meta', 'Amazon', 'Netflix', 'Spotify', 'TCS', 'Infosys', 'Wipro', 'Accenture', 'Startup', 'Freelance'];
   return companies[Math.floor(Math.random() * companies.length)];
 }
@@ -592,13 +588,13 @@ function getRandomAvatar() {
 function getTimeAgo(date) {
   const now = new Date();
   const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-  
+
   if (diffInMinutes < 1) return 'Just now';
   if (diffInMinutes < 60) return `${diffInMinutes} mins ago`;
-  
+
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-  
+
   const diffInDays = Math.floor(diffInHours / 24);
   return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
 }
@@ -950,6 +946,42 @@ app.put('/api/jobs/:id', async (req, res) => {
       data: job
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get applications for specific job
+app.get('/api/admin/job-applications/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const applications = await JobApplication.find({ job: jobId })
+      .populate('applicant', 'firstName lastName email profile')
+      .populate('job', 'title department location salaryRange')
+      .sort({ createdAt: -1 });
+
+    // Transform applications to include all relevant data
+    const transformedApplications = applications.map(app => ({
+      _id: app._id,
+      status: app.status,
+      coverLetter: app.coverLetter,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+      adminNotes: app.adminNotes,
+      aiAnalysis: app.aiAnalysis,
+      applicant: app.applicant,
+      job: app.job
+    }));
+
+    res.json({
+      success: true,
+      data: transformedApplications
+    });
+  } catch (error) {
+    console.error('Error fetching job applications:', error);
     res.status(500).json({
       success: false,
       error: error.message

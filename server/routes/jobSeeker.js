@@ -1,4 +1,8 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { authenticateToken } from '../middleware/auth.js';
 import JobApplication from '../models/JobApplication.js';
 import SavedJob from '../models/SavedJob.js';
@@ -7,6 +11,75 @@ import JobRole from '../models/JobRole.js';
 import User from '../models/User.js';
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configure multer for resume uploads
+const resumeStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, '../../uploads/resumes');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `${req.user._id}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+// Configure multer for profile picture uploads
+const profilePictureStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, '../../uploads/profile-pictures');
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `${req.user._id}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const uploadResume = multer({
+  storage: resumeStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /pdf|doc|docx/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype) || 
+      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only PDF, DOC, and DOCX files are allowed'));
+    }
+  }
+});
+
+const uploadProfilePicture = multer({
+  storage: profilePictureStorage,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and GIF images are allowed'));
+    }
+  }
+});
 
 // Get dashboard stats for job seeker
 router.get('/dashboard/stats', authenticateToken, async (req, res) => {
@@ -153,6 +226,84 @@ router.get('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// Profile picture upload endpoint
+router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No profile picture uploaded'
+      });
+    }
+
+    const profilePictureData = {
+      fileName: req.file.originalname,
+      fileUrl: `/uploads/profile-pictures/${req.file.filename}`,
+      uploadDate: new Date()
+    };
+
+    // Update user profile with profile picture info
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { 'profile.profilePicture': profilePictureData },
+      { new: true, runValidators: true }
+    ).select('-password -refreshToken');
+
+    res.json({
+      success: true,
+      data: {
+        profilePicture: profilePictureData,
+        user: updatedUser
+      }
+    });
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Resume upload endpoint
+router.post('/upload-resume', authenticateToken, uploadResume.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No resume file uploaded'
+      });
+    }
+
+    const resumeData = {
+      fileName: req.file.originalname,
+      fileUrl: `/uploads/resumes/${req.file.filename}`,
+      uploadDate: new Date()
+    };
+
+    // Update user profile with resume info
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { 'profile.resume': resumeData },
+      { new: true, runValidators: true }
+    ).select('-password -refreshToken');
+
+    res.json({
+      success: true,
+      data: {
+        resume: resumeData,
+        user: updatedUser
+      }
+    });
+  } catch (error) {
+    console.error('Resume upload error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Update user profile
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
@@ -160,29 +311,40 @@ router.put('/profile', authenticateToken, async (req, res) => {
       firstName,
       lastName,
       phone,
-      location,
+      alternatePhone,
+      dateOfBirth,
+      gender,
+      address,
       bio,
       skills,
       experience,
       education,
       linkedIn,
       portfolio,
-      // Enhanced profile fields
+      github,
+      // Professional fields
       currentCompany,
+      currentDesignation,
       expectedSalary,
+      currentSalary,
       noticePeriod,
       workAuthorization,
       availability,
       totalExperience,
       relevantExperience,
+      preferredLocation,
+      workPreferences,
+      // Academic fields
       degree,
       university,
       graduationYear,
       gpa,
       abcId,
+      // Additional fields
       certifications,
       languages,
-      preferredLocation
+      // Consent fields
+      consents
     } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -191,20 +353,28 @@ router.put('/profile', authenticateToken, async (req, res) => {
         firstName,
         lastName,
         'profile.phone': phone,
-        'profile.location': location,
+        'profile.alternatePhone': alternatePhone,
+        'profile.dateOfBirth': dateOfBirth,
+        'profile.gender': gender,
+        'profile.address': address,
         'profile.bio': bio,
         'profile.skills': skills,
         'profile.experience': experience,
         'profile.education': education,
         'profile.linkedIn': linkedIn,
         'profile.portfolio': portfolio,
+        'profile.github': github,
         'profile.currentCompany': currentCompany,
+        'profile.currentDesignation': currentDesignation,
         'profile.expectedSalary': expectedSalary,
+        'profile.currentSalary': currentSalary,
         'profile.noticePeriod': noticePeriod,
         'profile.workAuthorization': workAuthorization,
         'profile.availability': availability,
         'profile.totalExperience': totalExperience,
         'profile.relevantExperience': relevantExperience,
+        'profile.preferredLocation': preferredLocation,
+        'profile.workPreferences': workPreferences,
         'profile.degree': degree,
         'profile.university': university,
         'profile.graduationYear': graduationYear,
@@ -212,7 +382,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         'profile.abcId': abcId,
         'profile.certifications': certifications,
         'profile.languages': languages,
-        'profile.preferredLocation': preferredLocation
+        'profile.consents': consents
       },
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
