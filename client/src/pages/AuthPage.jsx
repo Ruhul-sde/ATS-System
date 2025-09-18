@@ -115,50 +115,35 @@ const AuthPage = ({ onSuccess }) => {
       {/* Main Content with 3D Card */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-0">
         <div className="w-full max-w-md">
-          {/* 3D Brand Logo Section */}
-          <div className="text-center mb-12 transform-gpu">
-            <div className="relative inline-block group">
-              {/* 3D Shadow layers */}
-              <div className="absolute inset-0 transform translate-x-2 translate-y-2 opacity-20">
-                <div 
-                  className="w-24 h-24 rounded-3xl shadow-2xl"
-                  style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
-                ></div>
-              </div>
-              <div className="absolute inset-0 transform translate-x-1 translate-y-1 opacity-40">
-                <div 
-                  className="w-24 h-24 rounded-3xl shadow-xl"
-                  style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
-                ></div>
-              </div>
-              
-              {/* Main logo */}
+          {/* Compact Brand Logo Section */}
+          <div className="text-center mb-6 transform-gpu">
+            <div className="relative inline-block group mb-4">
+              {/* Main logo - smaller size */}
               <div 
-                className="relative w-24 h-24 rounded-3xl shadow-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 mx-auto mb-6"
+                className="relative w-16 h-16 rounded-2xl shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto"
                 style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
               >
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
                   <img 
                     src="/src/assets/logo.png" 
                     alt="ATS Pro Logo" 
-                    className="w-10 h-10 object-contain"
+                    className="w-8 h-8 object-contain"
                   />
                 </div>
               </div>
             </div>
             
             <h1 
-              className="text-5xl md:text-6xl font-black mb-6 tracking-tight"
+              className="text-3xl md:text-4xl font-black mb-2 tracking-tight"
               style={{ 
                 backgroundImage: 'linear-gradient(135deg, #ED1B2F 0%, #455185 100%)',
                 WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0 0 30px rgba(237, 27, 47, 0.3)'
+                WebkitTextFillColor: 'transparent'
               }}
             >
               Welcome to ATS Pro
             </h1>
-            <p className="text-xl text-gray-300 font-light tracking-wide mb-12">
+            <p className="text-base text-gray-300 font-light tracking-wide mb-6">
               Advanced Talent Management System
             </p>
           </div>
