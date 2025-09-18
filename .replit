@@ -49,3 +49,8 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "-c", "cd server && npm start"]
+build = ["bash", "-c", "cd client && npm run build"]
