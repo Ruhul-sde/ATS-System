@@ -227,8 +227,23 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // Profile picture upload endpoint
-router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.single('profilePicture'), async (req, res) => {
+router.post('/upload-profile-picture', authenticateToken, (req, res, next) => {
+  uploadProfilePicture.single('profilePicture')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        success: false,
+        error: err.message
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('Profile picture upload request received');
+    console.log('File:', req.file);
+    console.log('User:', req.user._id);
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -249,6 +264,8 @@ router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.s
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
 
+    console.log('Profile picture uploaded successfully:', profilePictureData);
+
     res.json({
       success: true,
       data: {
@@ -266,8 +283,23 @@ router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.s
 });
 
 // Resume upload endpoint
-router.post('/upload-resume', authenticateToken, uploadResume.single('resume'), async (req, res) => {
+router.post('/upload-resume', authenticateToken, (req, res, next) => {
+  uploadResume.single('resume')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        success: false,
+        error: err.message
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('Resume upload request received');
+    console.log('File:', req.file);
+    console.log('User:', req.user._id);
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -287,6 +319,8 @@ router.post('/upload-resume', authenticateToken, uploadResume.single('resume'), 
       { 'profile.resume': resumeData },
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
+
+    console.log('Resume uploaded successfully:', resumeData);
 
     res.json({
       success: true,

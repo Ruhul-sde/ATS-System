@@ -460,8 +460,13 @@ export default function ProfilePage() {
     formDataUpload.append('profilePicture', file);
 
     try {
-      const response = await apiCall('/api/job-seeker/upload-profile-picture', {
+      // Create the request without Content-Type header to let browser set it with boundary
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/job-seeker/upload-profile-picture', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formDataUpload
       });
 
@@ -506,8 +511,13 @@ export default function ProfilePage() {
     formDataUpload.append('resume', file);
 
     try {
-      const response = await apiCall('/api/job-seeker/upload-resume', {
+      // Create the request without Content-Type header to let browser set it with boundary
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/job-seeker/upload-resume', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formDataUpload
       });
 
