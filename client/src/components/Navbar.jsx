@@ -47,7 +47,13 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="text-3xl group-hover:scale-110 transition-transform duration-300">🎯</div>
+            <div className="w-12 h-12 bg-white/10 rounded-2xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+              <img 
+                src="/src/assets/logo.png" 
+                alt="ATS Pro Logo" 
+                className="w-8 h-8 object-contain"
+              />
+            </div>
             <div>
               <div className="text-2xl font-black bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 ATS Pro

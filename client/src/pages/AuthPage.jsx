@@ -69,8 +69,12 @@ const AuthPage = ({ onSuccess }) => {
                   className="absolute inset-0 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"
                   style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
                 ></div>
-                <div className="relative text-4xl p-2 bg-white/10 rounded-2xl backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
-                  🎯
+                <div className="relative w-12 h-12 p-2 bg-white/10 rounded-2xl backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+                  <img 
+                    src="/src/assets/logo.png" 
+                    alt="ATS Pro Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
               </div>
               <div>
@@ -134,9 +138,11 @@ const AuthPage = ({ onSuccess }) => {
                 style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
               >
                 <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6m0 0v6m0-6H8m0 0V6v6" />
-                  </svg>
+                  <img 
+                    src="/src/assets/logo.png" 
+                    alt="ATS Pro Logo" 
+                    className="w-10 h-10 object-contain"
+                  />
                 </div>
               </div>
             </div>
