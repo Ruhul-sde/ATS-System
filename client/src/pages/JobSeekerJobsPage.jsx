@@ -21,6 +21,8 @@ export default function JobSeekerJobsPage() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
 
   useEffect(() => {
     fetchJobs();
@@ -128,6 +130,11 @@ export default function JobSeekerJobsPage() {
     }
   };
 
+  const handleViewDetails = (job) => {
+    setSelectedJobForDetails(job);
+    setShowJobDetailsModal(true);
+  };
+
   const getDepartmentIcon = (department) => {
     switch (department) {
       case 'Engineering': return '💻';
@@ -160,6 +167,203 @@ export default function JobSeekerJobsPage() {
 
     return matchesSearch && matchesDepartment && matchesLevel && matchesLocation && matchesType;
   });
+
+  const JobDetailsModal = () => {
+    if (!showJobDetailsModal || !selectedJobForDetails) return null;
+    
+    const job = selectedJobForDetails;
+    
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+          {/* Header */}
+          <div className="relative p-8 pb-6">
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={() => setShowJobDetailsModal(false)}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex items-start space-x-6 mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center border border-white/20">
+                <span className="text-4xl">{getDepartmentIcon(job.department)}</span>
+              </div>
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-white mb-2">{job.title}</h2>
+                <div className="flex items-center space-x-4 text-gray-300 mb-3">
+                  <span className="flex items-center space-x-1 bg-white/10 px-3 py-1 rounded-lg">
+                    <span>🏢</span>
+                    <span>{job.department}</span>
+                  </span>
+                  <span className="flex items-center space-x-1 bg-white/10 px-3 py-1 rounded-lg">
+                    <span>📍</span>
+                    <span>{job.location || 'Remote'}</span>
+                  </span>
+                  <span className="flex items-center space-x-1 bg-white/10 px-3 py-1 rounded-lg">
+                    <span>⏰</span>
+                    <span>{job.type}</span>
+                  </span>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    job.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {job.status === 'active' ? 'Active' : job.status}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl p-4 text-center border border-blue-500/30">
+                <div className="text-2xl font-bold text-blue-400">{job.positionCount || 1}</div>
+                <div className="text-sm text-gray-300">Open Positions</div>
+              </div>
+              <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-2xl p-4 text-center border border-green-500/30">
+                <div className="text-2xl font-bold text-green-400">{job.applications || 0}</div>
+                <div className="text-sm text-gray-300">Applications</div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl p-4 text-center border border-purple-500/30">
+                <div className="text-2xl font-bold text-purple-400">{job.views || 10}</div>
+                <div className="text-sm text-gray-300">Views</div>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-2xl p-4 text-center border border-yellow-500/30">
+                <div className="text-2xl font-bold text-yellow-400">{job.shortlisted || 0}</div>
+                <div className="text-sm text-gray-300">Shortlisted</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="px-8 pb-8 space-y-6">
+            {/* Job Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-2xl">💰</span>
+                <div>
+                  <div className="font-semibold text-white">{formatSalary(job.salaryRange)}</div>
+                  <div className="text-sm text-gray-400">Salary Range</div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-2xl">⏰</span>
+                <div>
+                  <div className="font-semibold text-white">{job.noticePeriod || '2 Weeks'}</div>
+                  <div className="text-sm text-gray-400">Notice Period</div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-2xl">📅</span>
+                <div>
+                  <div className="font-semibold text-white">{job.deadline ? new Date(job.deadline).toLocaleDateString() : '18/9/2025'}</div>
+                  <div className="text-sm text-gray-400">Application Deadline</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Job Description */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+              <h3 className="text-xl font-bold text-white mb-4">📋 Job Description</h3>
+              <p className="text-gray-300 leading-relaxed mb-4">{job.description}</p>
+              
+              {job.responsibilities && job.responsibilities.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="font-semibold text-white mb-2">Key Responsibilities:</h4>
+                  <ul className="text-gray-300 space-y-1">
+                    {job.responsibilities.map((resp, index) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <span className="text-blue-400 mt-1">•</span>
+                        <span>{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Required Skills */}
+            {job.skills && job.skills.length > 0 && (
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                <h3 className="text-xl font-bold text-white mb-4">🎯 Required Skills:</h3>
+                <div className="flex flex-wrap gap-3">
+                  {job.skills.map((skill, index) => (
+                    <span key={index} className="px-4 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 rounded-full border border-purple-500/30 font-medium">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Qualifications */}
+            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+              <h3 className="text-xl font-bold text-white mb-4">🎓 Qualifications</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Experience Level:</h4>
+                  <p className="text-gray-300">{job.experienceLevel || 'Mid Level'}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Work Mode:</h4>
+                  <p className="text-gray-300">{job.workMode || 'Hybrid'}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Education:</h4>
+                  <p className="text-gray-300">{job.education || 'Bachelor\'s degree in relevant field'}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">Posted:</h4>
+                  <p className="text-gray-300">{new Date(job.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 pt-4">
+              {appliedJobs.has(job._id) ? (
+                <button 
+                  disabled
+                  className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white py-4 px-6 rounded-xl font-medium cursor-not-allowed opacity-50 flex items-center justify-center space-x-2"
+                >
+                  <span>✓</span>
+                  <span>Applied</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setShowJobDetailsModal(false);
+                    handleApplyToJob(job);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-cyan-600 hover:from-green-600 hover:to-cyan-700 text-white py-4 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 shadow-lg"
+                >
+                  <span>📝</span>
+                  <span>Apply Now</span>
+                </button>
+              )}
+              <button 
+                onClick={() => {
+                  handleSaveJob(job._id);
+                  setShowJobDetailsModal(false);
+                }}
+                className={`px-6 py-4 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center space-x-2 shadow-lg ${
+                  savedJobs.has(job._id)
+                    ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
+                    : 'bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white'
+                }`}
+              >
+                <span>{savedJobs.has(job._id) ? '💔' : '❤️'}</span>
+                <span>{savedJobs.has(job._id) ? 'Unsave' : 'Save'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const ApplicationModal = () => {
     if (!showApplicationModal || !selectedJob) return null;
@@ -301,6 +505,26 @@ export default function JobSeekerJobsPage() {
 
       {/* Action Buttons */}
       <div className="p-6 pt-4 bg-gradient-to-r from-white/5 to-white/2 border-t border-white/10">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <button 
+            onClick={() => handleViewDetails(job)}
+            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 text-sm shadow-lg"
+          >
+            <span>👁️</span>
+            <span>View Details</span>
+          </button>
+          <button 
+            onClick={() => handleSaveJob(job._id)}
+            className={`py-3 px-4 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 text-sm shadow-lg ${
+              savedJobs.has(job._id)
+                ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
+                : 'bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white'
+            }`}
+          >
+            <span>{savedJobs.has(job._id) ? '💔' : '❤️'}</span>
+            <span>{savedJobs.has(job._id) ? 'Unsave' : 'Save'}</span>
+          </button>
+        </div>
         <div className="flex gap-3">
           {appliedJobs.has(job._id) ? (
             <button 
@@ -319,17 +543,6 @@ export default function JobSeekerJobsPage() {
               <span>Apply Now</span>
             </button>
           )}
-          <button 
-            onClick={() => handleSaveJob(job._id)}
-            className={`px-4 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center space-x-2 text-sm shadow-lg ${
-              savedJobs.has(job._id)
-                ? 'bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white'
-                : 'bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white'
-            }`}
-          >
-            <span>{savedJobs.has(job._id) ? '💔' : '❤️'}</span>
-            <span className="hidden sm:inline">{savedJobs.has(job._id) ? 'Unsave' : 'Save'}</span>
-          </button>
         </div>
       </div>
     </div>
@@ -503,6 +716,7 @@ export default function JobSeekerJobsPage() {
         </div>
       </div>
 
+      <JobDetailsModal />
       <ApplicationModal />
       <Footer />
     </div>
