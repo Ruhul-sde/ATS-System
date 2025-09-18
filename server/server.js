@@ -13,6 +13,7 @@ import User from './models/User.js';
 import JobApplication from './models/JobApplication.js';
 import authRoutes from './routes/auth.js';
 import jobSeekerRoutes from './routes/jobSeeker.js';
+import atsRoutes from './routes/ats.js';
 import fs from 'fs'; // Import fs module
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +70,7 @@ const upload = multer({
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/job-seeker', jobSeekerRoutes);
+app.use('/api/ats', atsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

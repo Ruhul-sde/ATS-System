@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import FileUpload from '../components/FileUpload';
-import JobDescription from '../components/JobDescription';
+import JobRoleSelector from '../components/JobRoleSelector';
 import AIAnalysis from '../components/AIAnalysis';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -148,7 +148,9 @@ const mockAnalysisResults = [
 ];
 
 export default function ATSPage() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [files, setFiles] = useState([]);
+  const [selectedJobRole, setSelectedJobRole] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
   const [results, setResults] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -164,10 +166,25 @@ export default function ATSPage() {
     // Clear previous results when new files are selected
     setResults([]);
     setAnalysisStats(null);
+    
+    // Auto-advance to next step if files are selected
+    if (selectedFiles.length > 0 && currentStep === 1) {
+      setCurrentStep(2);
+    }
+  };
+
+  const handleJobRoleSelect = (jobRole) => {
+    setSelectedJobRole(jobRole);
+    if (jobRole && currentStep === 2) {
+      setCurrentStep(3);
+    }
   };
 
   const handleJobDescriptionChange = (value) => {
     setJobDescription(value);
+    if (value.trim().length > 100 && currentStep === 2) {
+      setCurrentStep(3);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -176,8 +193,8 @@ export default function ATSPage() {
       return;
     }
 
-    if (!jobDescription.trim()) {
-      setMessage({ type: 'error', text: 'Please enter a job description.' });
+    if (!selectedJobRole && !jobDescription.trim()) {
+      setMessage({ type: 'error', text: 'Please select a job role or enter a job description.' });
       return;
     }
 
@@ -187,64 +204,158 @@ export default function ATSPage() {
     setMessage({ type: 'info', text: 'Starting AI analysis... This may take a few minutes.' });
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add all files to FormData
-      files.forEach((file) => {
-        formData.append('resumes', file);
-      });
-      
-      // Add job description
-      formData.append('jobDescription', jobDescription);
-
-      console.log(`Uploading ${files.length} files for analysis...`);
-
-      // Call the backend API
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Server error: ${response.status}`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Please login to analyze resumes');
       }
 
-      const data = await response.json();
+      const analysisResults = [];
+      const total = files.length;
       
-      if (!data.success) {
-        throw new Error(data.message || data.error || 'Analysis failed');
+      // Analyze each file individually
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setProgress(Math.round(((i) / total) * 100));
+        
+        try {
+          console.log(`Analyzing file ${i + 1}/${total}: ${file.name}`);
+          
+          // Create FormData for this file
+          const formData = new FormData();
+          formData.append('resume', file);
+          
+          if (selectedJobRole) {
+            formData.append('jobRoleId', selectedJobRole._id);
+          } else {
+            formData.append('jobDescription', jobDescription);
+          }
+
+          // Call the new ATS analyze endpoint
+          const response = await fetch('/api/ats/analyze', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error(`Error analyzing ${file.name}:`, errorData);
+            
+            // Add failed result
+            analysisResults.push({
+              fileName: file.name,
+              error: errorData.error || `Analysis failed: ${response.status}`,
+              status: 'error'
+            });
+            continue;
+          }
+
+          const data = await response.json();
+          
+          if (data.success) {
+            // Transform the result to match expected format
+            const result = {
+              fileName: file.name,
+              matchPercentage: data.data.matchPercentage || 0,
+              matchingSkills: data.data.matchingSkills || [],
+              missingSkills: data.data.missingSkills || [],
+              strengths: data.data.strengths || [],
+              weaknesses: data.data.weaknesses || [],
+              recommendations: data.data.recommendations || [],
+              overallAssessment: data.data.overallAssessment || '',
+              keywordMatches: data.data.keywordMatches || [],
+              atsScore: data.data.scoringBreakdown || {},
+              detailedAnalysis: data.data.detailedKeywordAnalysis || {},
+              skillGapAnalysis: data.data.skillGapAnalysis || {},
+              status: 'success'
+            };
+            
+            analysisResults.push(result);
+          } else {
+            analysisResults.push({
+              fileName: file.name,
+              error: data.error || 'Analysis failed',
+              status: 'error'
+            });
+          }
+        } catch (fileError) {
+          console.error(`Error processing ${file.name}:`, fileError);
+          analysisResults.push({
+            fileName: file.name,
+            error: fileError.message,
+            status: 'error'
+          });
+        }
       }
 
-      // Set the results from API
-      setResults(data.results || []);
-      setAnalysisStats(data.summary);
-      setMessage({
-        type: 'success',
-        text: `✨ Analysis complete! Processed ${data.results?.length || 0} resumes successfully.`
-      });
-
-    } catch (error) {
-      console.error('Analysis error:', error);
+      setProgress(100);
       
-      // Handle network errors specifically
-      if (error.message.includes('fetch')) {
+      // Set the results
+      setResults(analysisResults);
+      
+      // Calculate summary stats
+      const successful = analysisResults.filter(r => r.status === 'success').length;
+      const failed = analysisResults.filter(r => r.status === 'error').length;
+      
+      setAnalysisStats({
+        total: total,
+        successful: successful,
+        failed: failed,
+        successRate: (successful / total) * 100
+      });
+      
+      if (successful > 0) {
+        setCurrentStep(4); // Move to results step
         setMessage({
-          type: 'error',
-          text: 'Cannot connect to server. Please make sure the server is running.'
+          type: 'success',
+          text: `✨ Analysis complete! Successfully processed ${successful}/${total} resumes.`
         });
       } else {
         setMessage({
           type: 'error',
-          text: `Analysis failed: ${error.message}`
+          text: `Analysis failed for all ${total} files. Please check the files and try again.`
         });
       }
+
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setMessage({
+        type: 'error',
+        text: `Analysis failed: ${error.message}`
+      });
     } finally {
       setIsAnalyzing(false);
       setProgress(0);
     }
   };
+
+  const canProceedToStep3 = (selectedJobRole || jobDescription.trim().length > 100);
+  const canAnalyze = files.length > 0 && canProceedToStep3;
+
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center space-x-4 mb-12">
+      {[1, 2, 3, 4].map((step) => (
+        <div key={step} className="flex items-center">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+            step <= currentStep 
+              ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
+              : 'bg-white/10 text-gray-400'
+          }`}>
+            {step}
+          </div>
+          {step < 4 && (
+            <div className={`w-16 h-1 mx-2 transition-all duration-300 ${
+              step < currentStep 
+                ? 'bg-gradient-to-r from-cyan-500 to-purple-600'
+                : 'bg-white/20'
+            }`}></div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
@@ -259,14 +370,17 @@ export default function ATSPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
-            🎯 Resume Analyzer
+            🎯 ATS Resume Analyzer
           </h1>
           <p className="text-lg md:text-xl text-gray-300 max-w-4xl mx-auto font-light leading-relaxed">
-            Upload resumes and get instant AI-powered analysis with match scores and recommendations
+            Intelligent resume analysis with job matching and hiring recommendations
           </p>
         </div>
+
+        {/* Step Indicator */}
+        {renderStepIndicator()}
 
         {/* Message Display */}
         {message && (
@@ -283,167 +397,177 @@ export default function ATSPage() {
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-          {/* Left Column - Upload & Job Description */}
-          <div className="space-y-8">
+        {/* Step Content */}
+        <div className="max-w-4xl mx-auto">
+          {/* Step 1: Upload Resumes */}
+          {currentStep === 1 && (
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
               <FileUpload files={files} onFileChange={handleFileChange} />
+              
+              {files.length > 0 && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                  >
+                    Next: Job Description →
+                  </button>
+                </div>
+              )}
             </div>
+          )}
 
+          {/* Step 2: Job Description */}
+          {currentStep === 2 && (
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-              <JobDescription value={jobDescription} onChange={handleJobDescriptionChange} />
+              <JobRoleSelector 
+                onJobRoleSelect={handleJobRoleSelect}
+                onJobDescriptionChange={handleJobDescriptionChange}
+              />
+              
+              <div className="flex justify-between mt-6">
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all duration-300"
+                >
+                  ← Back
+                </button>
+                
+                {canProceedToStep3 && (
+                  <button
+                    onClick={() => setCurrentStep(3)}
+                    className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                  >
+                    Next: Review & Analyze →
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Right Column - Analysis & Info */}
-          <div className="space-y-8">
-            {/* Analysis Button */}
+          {/* Step 3: Review & Analyze */}
+          {currentStep === 3 && (
             <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
               <div className="text-center">
                 <div className="text-4xl mb-4">🚀</div>
-                <h3 className="text-2xl font-bold text-white mb-4">Ready to Analyze?</h3>
-                <p className="text-gray-400 mb-6">
-                  {files.length > 0 && jobDescription.trim() 
-                    ? `${files.length} resumes ready for AI analysis`
-                    : 'Upload resumes and add job description to begin'
-                  }
-                </p>
+                <h3 className="text-2xl font-bold text-white mb-6">Ready to Analyze</h3>
                 
-                <button
-                  onClick={handleAnalyze}
-                  disabled={files.length === 0 || !jobDescription.trim() || isAnalyzing}
-                  className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 ${
-                    files.length === 0 || !jobDescription.trim() || isAnalyzing
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white hover:scale-105 shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {isAnalyzing ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin text-2xl">🤖</div>
-                      <span>Analyzing Resumes...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <span>🎯</span>
-                      <span>Start AI Analysis</span>
-                    </div>
-                  )}
-                </button>
+                {/* Review Summary */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <h4 className="text-lg font-semibold text-cyan-400 mb-3">📄 Resumes</h4>
+                    <p className="text-2xl font-bold text-white">{files.length}</p>
+                    <p className="text-gray-400 text-sm">Files selected for analysis</p>
+                  </div>
+                  
+                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                    <h4 className="text-lg font-semibold text-purple-400 mb-3">🎯 Job Description</h4>
+                    {selectedJobRole ? (
+                      <div>
+                        <p className="text-lg font-bold text-white">{selectedJobRole.title}</p>
+                        <p className="text-gray-400 text-sm">{selectedJobRole.company}</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-lg font-bold text-white">Custom Description</p>
+                        <p className="text-gray-400 text-sm">{jobDescription.length} characters</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex justify-between">
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-medium transition-all duration-300"
+                  >
+                    ← Back
+                  </button>
+                  
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={!canAnalyze || isAnalyzing}
+                    className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
+                      !canAnalyze || isAnalyzing
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white hover:scale-105 shadow-lg hover:shadow-xl'
+                    }`}
+                  >
+                    {isAnalyzing ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin text-2xl">🤖</div>
+                        <span>Analyzing...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <span>🎯</span>
+                        <span>Start AI Analysis</span>
+                      </div>
+                    )}
+                  </button>
+                </div>
 
                 {isAnalyzing && (
-                  <div className="mt-4">
-                    <div className="bg-white/10 rounded-full h-2">
+                  <div className="mt-6">
+                    <div className="bg-white/10 rounded-full h-3">
                       <div 
-                        className="bg-gradient-to-r from-cyan-400 to-purple-500 h-2 rounded-full transition-all duration-500"
+                        className="bg-gradient-to-r from-cyan-400 to-purple-500 h-3 rounded-full transition-all duration-500"
                         style={{width: `${progress}%`}}
                       ></div>
                     </div>
-                    <p className="text-sm text-gray-400 mt-2">Processing {files.length} resumes with AI...</p>
+                    <p className="text-sm text-gray-400 mt-3">Processing {files.length} resumes with AI... {progress}%</p>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* How It Works */}
-            <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
-              <div className="space-y-6">
-                <div className="flex items-center space-x-3">
-                  <div className="text-3xl">🔬</div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white">Advanced ATS Analysis</h2>
-                    <p className="text-gray-400">AI-powered candidate matching</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="text-2xl">🎯</div>
-                    <div>
-                      <h3 className="text-white font-semibold">Keyword Matching</h3>
-                      <p className="text-gray-400 text-sm">Intelligent keyword analysis with synonyms and semantic matching</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="text-2xl">📊</div>
-                    <div>
-                      <h3 className="text-white font-semibold">ATS Scoring</h3>
-                      <p className="text-gray-400 text-sm">Comprehensive scoring across multiple criteria</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4 p-4 bg-white/5 rounded-xl border border-white/10">
-                    <div className="text-2xl">🧠</div>
-                    <div>
-                      <h3 className="text-white font-semibold">AI Recommendations</h3>
-                      <p className="text-gray-400 text-sm">Detailed hiring recommendations and interview questions</p>
-                    </div>
-                  </div>
-                </div>
-
-                {files.length > 0 && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-green-500/20 to-emerald-600/20 border border-green-500/30 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-green-400 text-xl">📁</span>
-                        <span className="text-green-300 font-medium">
-                          {files.length} resume{files.length !== 1 ? 's' : ''} selected
-                        </span>
-                      </div>
-                      <div className="text-green-400 text-sm">
-                        {(files.reduce((total, file) => total + file.size, 0) / 1024 / 1024).toFixed(1)} MB
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {analysisStats && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-500/30 rounded-xl">
-                    <div className="text-center">
-                      <div className="text-blue-400 text-sm font-semibold mb-1">Last Analysis Summary</div>
-                      <div className="text-white">
-                        {analysisStats.successful}/{analysisStats.total} resumes processed successfully
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        Success rate: {Math.round(analysisStats.successRate || 0)}%
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Analysis Results */}
-        {results.length > 0 && (
+        {/* Step 4: Analysis Results */}
+        {currentStep === 4 && results.length > 0 && (
           <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20 animate-fade-in">
             <AIAnalysis results={results} />
+            
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => {
+                  setCurrentStep(1);
+                  setFiles([]);
+                  setResults([]);
+                  setSelectedJobRole(null);
+                  setJobDescription('');
+                  setMessage(null);
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+              >
+                🔄 Analyze More Resumes
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Feature Highlights */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
-            <div className="text-5xl mb-4">🤖</div>
-            <h3 className="text-xl font-bold text-white mb-3">AI-Powered Analysis</h3>
-            <p className="text-gray-400 text-sm">Advanced algorithms analyze resume content and match skills instantly</p>
-          </div>
+        {/* Feature Highlights - Show when not in results step */}
+        {currentStep < 4 && (
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+              <div className="text-5xl mb-4">🤖</div>
+              <h3 className="text-xl font-bold text-white mb-3">AI-Powered Analysis</h3>
+              <p className="text-gray-400 text-sm">Advanced algorithms analyze resume content and match skills instantly</p>
+            </div>
 
-          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
-            <div className="text-5xl mb-4">⚡</div>
-            <h3 className="text-xl font-bold text-white mb-3">Lightning Fast</h3>
-            <p className="text-gray-400 text-sm">Get instant results as soon as you upload your files</p>
-          </div>
+            <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+              <div className="text-5xl mb-4">⚡</div>
+              <h3 className="text-xl font-bold text-white mb-3">Lightning Fast</h3>
+              <p className="text-gray-400 text-sm">Get instant results as soon as you upload your files</p>
+            </div>
 
-          <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
-            <div className="text-5xl mb-4">📊</div>
-            <h3 className="text-xl font-bold text-white mb-3">Detailed Insights</h3>
-            <p className="text-gray-400 text-sm">Comprehensive match scores and skill analysis reports</p>
+            <div className="text-center p-8 bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-sm rounded-2xl border border-white/10">
+              <div className="text-5xl mb-4">📊</div>
+              <h3 className="text-xl font-bold text-white mb-3">Detailed Insights</h3>
+              <p className="text-gray-400 text-sm">Comprehensive match scores and skill analysis reports</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <Footer />
