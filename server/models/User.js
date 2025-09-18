@@ -161,8 +161,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for performance
-userSchema.index({ email: 1 });
+// Index for performance (email index already created by unique: true)
 userSchema.index({ role: 1 });
 userSchema.index({ 'applications.jobId': 1 });
 

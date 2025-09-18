@@ -6,10 +6,7 @@ const connectDB = async () => {
     const mongoUri = config.database.mongoUri || 'mongodb://localhost:27017/ats_pro';
     console.log('Attempting to connect to MongoDB:', mongoUri);
 
-    const conn = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    const conn = await mongoose.connect(mongoUri);
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
     console.log(`📦 Database: ${conn.connection.name}`);
