@@ -158,28 +158,9 @@ const AuthPage = ({ onSuccess }) => {
             >
               Welcome to ATS Pro
             </h1>
-            <p className="text-xl text-gray-300 font-light tracking-wide mb-4">
+            <p className="text-xl text-gray-300 font-light tracking-wide mb-12">
               Advanced Talent Management System
             </p>
-            
-            {/* Enhanced Feature Highlights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 mb-8">
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
-                <div className="text-3xl mb-2">🤖</div>
-                <p className="text-white font-semibold text-sm">AI-Powered Analysis</p>
-                <p className="text-gray-400 text-xs mt-1">Smart resume screening</p>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
-                <div className="text-3xl mb-2">📊</div>
-                <p className="text-white font-semibold text-sm">Real-time Analytics</p>
-                <p className="text-gray-400 text-xs mt-1">Track hiring metrics</p>
-              </div>
-              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
-                <div className="text-3xl mb-2">⚡</div>
-                <p className="text-white font-semibold text-sm">Lightning Fast</p>
-                <p className="text-gray-400 text-xs mt-1">Instant results</p>
-              </div>
-            </div>
           </div>
 
           {/* Enhanced Auth Forms with 3D Effect */}
