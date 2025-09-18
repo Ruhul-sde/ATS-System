@@ -142,7 +142,7 @@ const AuthPage = ({ onSuccess }) => {
             </div>
             
             <h1 
-              className="text-5xl md:text-6xl font-black mb-4 tracking-tight"
+              className="text-5xl md:text-6xl font-black mb-6 tracking-tight"
               style={{ 
                 backgroundImage: 'linear-gradient(135deg, #ED1B2F 0%, #455185 100%)',
                 WebkitBackgroundClip: 'text',
@@ -152,61 +152,26 @@ const AuthPage = ({ onSuccess }) => {
             >
               Welcome to ATS Pro
             </h1>
-            <p className="text-xl text-gray-300 font-light tracking-wide">
+            <p className="text-xl text-gray-300 font-light tracking-wide mb-4">
               Advanced Talent Management System
             </p>
             
-            {/* Enhanced Test Credentials with 3D Cards */}
-            <div className="mt-8 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
-              <h3 className="text-white font-bold mb-4 text-lg">🚀 Test Login Credentials</h3>
-              <div className="space-y-3 text-sm">
-                <div 
-                  className="relative overflow-hidden p-4 rounded-2xl border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 cursor-pointer group"
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(237, 27, 47, 0.1), rgba(237, 27, 47, 0.05))',
-                    borderColor: 'rgba(237, 27, 47, 0.3)'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <div className="relative">
-                    <p className="text-red-300 font-semibold flex items-center">
-                      <span className="text-xl mr-2">👑</span>
-                      Admin/Recruiter
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">📧</span>
-                      admin@test.com
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">🔑</span>
-                      admin123
-                    </p>
-                  </div>
-                </div>
-                
-                <div 
-                  className="relative overflow-hidden p-4 rounded-2xl border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 cursor-pointer group"
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(69, 81, 133, 0.1), rgba(69, 81, 133, 0.05))',
-                    borderColor: 'rgba(69, 81, 133, 0.3)'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <div className="relative">
-                    <p className="text-blue-300 font-semibold flex items-center">
-                      <span className="text-xl mr-2">👤</span>
-                      Job Seeker
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">📧</span>
-                      user@test.com
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">🔑</span>
-                      user123
-                    </p>
-                  </div>
-                </div>
+            {/* Enhanced Feature Highlights */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8 mb-8">
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-2">🤖</div>
+                <p className="text-white font-semibold text-sm">AI-Powered Analysis</p>
+                <p className="text-gray-400 text-xs mt-1">Smart resume screening</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-2">📊</div>
+                <p className="text-white font-semibold text-sm">Real-time Analytics</p>
+                <p className="text-gray-400 text-xs mt-1">Track hiring metrics</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 text-center transform hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-2">⚡</div>
+                <p className="text-white font-semibold text-sm">Lightning Fast</p>
+                <p className="text-gray-400 text-xs mt-1">Instant results</p>
               </div>
             </div>
           </div>
