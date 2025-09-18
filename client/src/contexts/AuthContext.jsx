@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }) => {
 
   // Helper function to make authenticated API calls
   const apiCall = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
     // Check if body is FormData to avoid setting Content-Type header
     const isFormData = options.body instanceof FormData;
