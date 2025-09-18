@@ -63,46 +63,46 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-6">
+    <div className="w-full max-w-md mx-auto p-4">
       {/* Modern Header with Animated Elements */}
-      <div className="text-center mb-8">
-        <div className="relative inline-block mb-6">
+      <div className="text-center mb-4">
+        <div className="relative inline-block mb-3">
           {/* Animated Background Ring */}
           <div className="absolute inset-0 rounded-full">
-            <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 animate-spin" style={{animationDuration: '20s'}}></div>
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/20 animate-spin" style={{animationDuration: '20s'}}></div>
           </div>
-          <div className="absolute inset-2 rounded-full">
-            <div className="w-16 h-16 rounded-full border border-white/10 animate-pulse"></div>
+          <div className="absolute inset-1 rounded-full">
+            <div className="w-14 h-14 rounded-full border border-white/10 animate-pulse"></div>
           </div>
           
           {/* Main Icon */}
           <div 
-            className="relative w-16 h-16 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg transform hover:scale-110 transition-transform duration-300 mx-auto"
+            className="relative w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg transform hover:scale-110 transition-transform duration-300 mx-auto"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl blur-lg opacity-50"></div>
-            <svg className="relative w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="relative w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
         </div>
         
-        <h2 className="text-3xl font-bold text-white mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold text-white mb-1 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
           Welcome Back
         </h2>
         <p className="text-gray-300 text-sm font-medium">Sign in to continue your journey</p>
         
         {/* Decorative Line */}
-        <div className="flex items-center justify-center mt-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent w-24"></div>
-          <div className="mx-4 text-white/40">✦</div>
-          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent w-24"></div>
+        <div className="flex items-center justify-center mt-3">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent w-16"></div>
+          <div className="mx-3 text-white/40 text-sm">✦</div>
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent w-16"></div>
         </div>
       </div>
 
       {/* Modern Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Email Field */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <label className="flex items-center text-sm font-medium text-gray-200">
             <svg className="w-4 h-4 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
@@ -116,7 +116,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`relative w-full px-4 py-4 rounded-xl border bg-white/5 backdrop-blur-sm text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:bg-white/10 focus:border-white/30 hover:bg-white/8 ${
+              className={`relative w-full px-4 py-3 rounded-xl border bg-white/5 backdrop-blur-sm text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:bg-white/10 focus:border-white/30 hover:bg-white/8 ${
                 errors.email 
                   ? 'border-red-400/60 focus:border-red-400' 
                   : 'border-white/20'
@@ -136,7 +136,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
         </div>
 
         {/* Password Field */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <label className="flex items-center text-sm font-medium text-gray-200">
             <svg className="w-4 h-4 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -150,7 +150,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`relative w-full px-4 py-4 rounded-xl border bg-white/5 backdrop-blur-sm text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:bg-white/10 focus:border-white/30 hover:bg-white/8 ${
+              className={`relative w-full px-4 py-3 rounded-xl border bg-white/5 backdrop-blur-sm text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:bg-white/10 focus:border-white/30 hover:bg-white/8 ${
                 errors.password 
                   ? 'border-red-400/60 focus:border-red-400' 
                   : 'border-white/20'
@@ -182,12 +182,12 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
         )}
 
         {/* Submit Button */}
-        <div className="relative group">
+        <div className="relative group mt-6">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"></div>
           <button
             type="submit"
             disabled={loading}
-            className="relative w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+            className="relative w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -206,7 +206,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
         </div>
 
         {/* Switch to Register */}
-        <div className="text-center pt-6">
+        <div className="text-center pt-4">
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/10"></div>
@@ -220,7 +220,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
           <button
             type="button"
             onClick={switchToRegister}
-            className="mt-4 text-white font-medium hover:text-blue-400 focus:outline-none transition-all duration-300 group"
+            className="mt-3 text-white font-medium hover:text-blue-400 focus:outline-none transition-all duration-300 group"
           >
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent group-hover:from-blue-300 group-hover:to-purple-300">
               Create your account →
@@ -230,7 +230,7 @@ const LoginForm = ({ onSuccess, switchToRegister }) => {
       </form>
 
       {/* Additional Options */}
-      <div className="mt-8 text-center">
+      <div className="mt-4 text-center">
         <button
           type="button"
           className="text-sm text-gray-400 hover:text-gray-300 focus:outline-none transition-colors duration-300 relative group"
