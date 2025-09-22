@@ -201,13 +201,17 @@ export default function ProfilePage() {
         const data = await response.json();
         const profile = data.data;
         
+        console.log('Profile loaded:', profile);
+        console.log('Profile picture:', profile.profile?.profilePicture);
+        console.log('Resume:', profile.profile?.resume);
+        
         setFormData({
           firstName: profile.firstName || '',
           lastName: profile.lastName || '',
           email: profile.email || '',
           phone: profile.profile?.phone || '',
           alternatePhone: profile.profile?.alternatePhone || '',
-          dateOfBirth: profile.profile?.dateOfBirth || '',
+          dateOfBirth: profile.profile?.dateOfBirth ? profile.profile.dateOfBirth.split('T')[0] : '',
           gender: profile.profile?.gender || '',
           address: {
             street: profile.profile?.address?.street || '',
@@ -252,6 +256,9 @@ export default function ProfilePage() {
         });
         
         updateCompletionStatus(profile);
+      } else {
+        const error = await response.json();
+        setMessage({ text: error.error || 'Failed to load profile', type: 'error' });
       }
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -460,6 +467,7 @@ export default function ProfilePage() {
     formDataUpload.append('profilePicture', file);
 
     try {
+      // Use apiCall method for consistent token handling
       const response = await apiCall('/api/job-seeker/upload-profile-picture', {
         method: 'POST',
         body: formDataUpload
@@ -472,6 +480,11 @@ export default function ProfilePage() {
           profilePicture: data.data.profilePicture
         }));
         setMessage({ text: 'Profile picture uploaded successfully!', type: 'success' });
+        
+        // Reload profile to get updated data
+        setTimeout(() => {
+          loadProfile();
+        }, 1000);
       } else {
         const error = await response.json();
         setMessage({ text: error.error || 'Failed to upload profile picture', type: 'error' });
@@ -506,6 +519,7 @@ export default function ProfilePage() {
     formDataUpload.append('resume', file);
 
     try {
+      // Use apiCall method for consistent token handling
       const response = await apiCall('/api/job-seeker/upload-resume', {
         method: 'POST',
         body: formDataUpload
@@ -518,6 +532,11 @@ export default function ProfilePage() {
           resume: data.data.resume
         }));
         setMessage({ text: 'Resume uploaded successfully!', type: 'success' });
+        
+        // Reload profile to get updated data
+        setTimeout(() => {
+          loadProfile();
+        }, 1000);
       } else {
         const error = await response.json();
         setMessage({ text: error.error || 'Failed to upload resume', type: 'error' });

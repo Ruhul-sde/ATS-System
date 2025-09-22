@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const storedUser = localStorage.getItem('user');
         const storedToken = localStorage.getItem('accessToken');
-        
+
         if (storedUser && storedToken) {
           setUser(JSON.parse(storedUser));
           setAccessToken(storedToken);
@@ -57,11 +57,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { user: userData, tokens } = data.data;
-      
+
       // Store user data and tokens
       setUser(userData);
       setAccessToken(tokens.accessToken);
-      
+
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
@@ -90,11 +90,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { user: newUser, tokens } = data.data;
-      
+
       // Store user data and tokens
       setUser(newUser);
       setAccessToken(tokens.accessToken);
-      
+
       localStorage.setItem('user', JSON.stringify(newUser));
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      
+
       // Force redirect to login page
       window.location.href = '/login';
     }
@@ -170,46 +170,34 @@ export const AuthProvider = ({ children }) => {
 
   // Helper function to make authenticated API calls
   const apiCall = async (url, options = {}) => {
-    try {
-      let token = accessToken;
-      
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          ...options.headers
-        }
-      });
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
 
-      // If token expired, try to refresh
-      if (response.status === 401) {
-        try {
-          token = await refreshTokens();
-          
-          // Retry the request with new token
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              ...options.headers
-            }
-          });
-          
-          return retryResponse;
-        } catch (refreshError) {
-          // Refresh failed, user needs to login again
-          logout();
-          throw new Error('Session expired. Please login again.');
-        }
+    // Check if body is FormData to avoid setting Content-Type header
+    const isFormData = options.body instanceof FormData;
+
+    const config = {
+      ...options,
+      headers: {
+        // Only set Content-Type for non-FormData requests
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+        ...options.headers,
+        ...(token && { 'Authorization': `Bearer ${token}` })
       }
+    };
 
-      return response;
-    } catch (error) {
-      console.error('API call error:', error);
-      throw error;
+    // Only stringify body if it's not FormData and is an object
+    if (options.body && typeof options.body === 'object' && !isFormData) {
+      config.body = JSON.stringify(options.body);
     }
+
+    const response = await fetch(url, config);
+
+    if (response.status === 401) {
+      logout();
+      throw new Error('Unauthorized');
+    }
+
+    return response;
   };
 
   const value = {

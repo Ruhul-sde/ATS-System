@@ -81,7 +81,7 @@ export default function Footer() {
             </div>
           </div>
           <div className="mt-4 md:mt-0 flex items-center space-x-4">
-            <span className="text-sm text-gray-400">Made with ❤️ on Replit</span>
+            <span className="text-sm text-gray-400">Developed with ❤️ by Akshay Team</span>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-gray-400">All systems operational</span>

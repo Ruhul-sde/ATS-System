@@ -227,9 +227,31 @@ router.get('/profile', authenticateToken, async (req, res) => {
 });
 
 // Profile picture upload endpoint
-router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.single('profilePicture'), async (req, res) => {
+router.post('/upload-profile-picture', authenticateToken, (req, res, next) => {
+  console.log('Profile picture upload middleware called');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('User ID:', req.user?._id);
+  
+  uploadProfilePicture.single('profilePicture')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        success: false,
+        error: err.message
+      });
+    }
+    console.log('Multer processing completed');
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('Profile picture upload request received');
+    console.log('File:', req.file);
+    console.log('User:', req.user._id);
+    console.log('Body:', req.body);
+
     if (!req.file) {
+      console.log('No file found in request');
       return res.status(400).json({
         success: false,
         error: 'No profile picture uploaded'
@@ -242,12 +264,17 @@ router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.s
       uploadDate: new Date()
     };
 
+    console.log('Profile picture data prepared:', profilePictureData);
+
     // Update user profile with profile picture info
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { 'profile.profilePicture': profilePictureData },
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
+
+    console.log('Profile picture uploaded successfully:', profilePictureData);
+    console.log('User updated:', updatedUser?._id);
 
     res.json({
       success: true,
@@ -266,9 +293,31 @@ router.post('/upload-profile-picture', authenticateToken, uploadProfilePicture.s
 });
 
 // Resume upload endpoint
-router.post('/upload-resume', authenticateToken, uploadResume.single('resume'), async (req, res) => {
+router.post('/upload-resume', authenticateToken, (req, res, next) => {
+  console.log('Resume upload middleware called');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('User ID:', req.user?._id);
+  
+  uploadResume.single('resume')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        success: false,
+        error: err.message
+      });
+    }
+    console.log('Multer processing completed for resume');
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('Resume upload request received');
+    console.log('File:', req.file);
+    console.log('User:', req.user._id);
+    console.log('Body:', req.body);
+
     if (!req.file) {
+      console.log('No resume file found in request');
       return res.status(400).json({
         success: false,
         error: 'No resume file uploaded'
@@ -281,12 +330,17 @@ router.post('/upload-resume', authenticateToken, uploadResume.single('resume'), 
       uploadDate: new Date()
     };
 
+    console.log('Resume data prepared:', resumeData);
+
     // Update user profile with resume info
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { 'profile.resume': resumeData },
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
+
+    console.log('Resume uploaded successfully:', resumeData);
+    console.log('User updated:', updatedUser?._id);
 
     res.json({
       success: true,

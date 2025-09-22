@@ -69,8 +69,12 @@ const AuthPage = ({ onSuccess }) => {
                   className="absolute inset-0 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"
                   style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
                 ></div>
-                <div className="relative text-4xl p-2 bg-white/10 rounded-2xl backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300">
-                  🎯
+                <div className="relative w-12 h-12 p-2 bg-white/10 rounded-2xl backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+                  <img 
+                    src="/src/assets/logo.png" 
+                    alt="ATS Pro Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
               </div>
               <div>
@@ -111,104 +115,37 @@ const AuthPage = ({ onSuccess }) => {
       {/* Main Content with 3D Card */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-0">
         <div className="w-full max-w-md">
-          {/* 3D Brand Logo Section */}
-          <div className="text-center mb-12 transform-gpu">
-            <div className="relative inline-block group">
-              {/* 3D Shadow layers */}
-              <div className="absolute inset-0 transform translate-x-2 translate-y-2 opacity-20">
-                <div 
-                  className="w-24 h-24 rounded-3xl shadow-2xl"
-                  style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
-                ></div>
-              </div>
-              <div className="absolute inset-0 transform translate-x-1 translate-y-1 opacity-40">
-                <div 
-                  className="w-24 h-24 rounded-3xl shadow-xl"
-                  style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
-                ></div>
-              </div>
-              
-              {/* Main logo */}
+          {/* Compact Brand Logo Section */}
+          <div className="text-center mb-6 transform-gpu">
+            <div className="relative inline-block group mb-4">
+              {/* Main logo - smaller size */}
               <div 
-                className="relative w-24 h-24 rounded-3xl shadow-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 mx-auto mb-6"
+                className="relative w-16 h-16 rounded-2xl shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto"
                 style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
               >
-                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6m0 0v6m0-6H8m0 0V6v6" />
-                  </svg>
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                  <img 
+                    src="/src/assets/logo.png" 
+                    alt="ATS Pro Logo" 
+                    className="w-8 h-8 object-contain"
+                  />
                 </div>
               </div>
             </div>
             
             <h1 
-              className="text-5xl md:text-6xl font-black mb-4 tracking-tight"
+              className="text-3xl md:text-4xl font-black mb-2 tracking-tight"
               style={{ 
                 backgroundImage: 'linear-gradient(135deg, #ED1B2F 0%, #455185 100%)',
                 WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                textShadow: '0 0 30px rgba(237, 27, 47, 0.3)'
+                WebkitTextFillColor: 'transparent'
               }}
             >
               Welcome to ATS Pro
             </h1>
-            <p className="text-xl text-gray-300 font-light tracking-wide">
+            <p className="text-base text-gray-300 font-light tracking-wide mb-6">
               Advanced Talent Management System
             </p>
-            
-            {/* Enhanced Test Credentials with 3D Cards */}
-            <div className="mt-8 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl transform hover:scale-[1.02] transition-transform duration-300">
-              <h3 className="text-white font-bold mb-4 text-lg">🚀 Test Login Credentials</h3>
-              <div className="space-y-3 text-sm">
-                <div 
-                  className="relative overflow-hidden p-4 rounded-2xl border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 cursor-pointer group"
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(237, 27, 47, 0.1), rgba(237, 27, 47, 0.05))',
-                    borderColor: 'rgba(237, 27, 47, 0.3)'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <div className="relative">
-                    <p className="text-red-300 font-semibold flex items-center">
-                      <span className="text-xl mr-2">👑</span>
-                      Admin/Recruiter
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">📧</span>
-                      admin@test.com
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">🔑</span>
-                      admin123
-                    </p>
-                  </div>
-                </div>
-                
-                <div 
-                  className="relative overflow-hidden p-4 rounded-2xl border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 cursor-pointer group"
-                  style={{ 
-                    background: 'linear-gradient(135deg, rgba(69, 81, 133, 0.1), rgba(69, 81, 133, 0.05))',
-                    borderColor: 'rgba(69, 81, 133, 0.3)'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  <div className="relative">
-                    <p className="text-blue-300 font-semibold flex items-center">
-                      <span className="text-xl mr-2">👤</span>
-                      Job Seeker
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">📧</span>
-                      user@test.com
-                    </p>
-                    <p className="text-gray-300 flex items-center mt-1">
-                      <span className="mr-2">🔑</span>
-                      user123
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Enhanced Auth Forms with 3D Effect */}

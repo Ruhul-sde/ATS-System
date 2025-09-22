@@ -119,9 +119,9 @@ app.post('/api/system/test-gemini', async (req, res) => {
   try {
     const testText = "This is a test resume with JavaScript and React skills.";
     const testJob = "We are looking for a frontend developer with React experience.";
-    
+
     const result = await GeminiService.analyzeResume(testText, testJob);
-    
+
     res.json({
       success: true,
       message: 'Gemini API is working correctly',
