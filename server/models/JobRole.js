@@ -2,6 +2,11 @@
 import mongoose from 'mongoose';
 
 const jobRoleSchema = new mongoose.Schema({
+  jobId: {
+    type: String,
+    unique: true,
+    required: true
+  },
   title: {
     type: String,
     required: true,
@@ -159,8 +164,14 @@ const jobRoleSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field before saving
+// Generate unique jobId and update updatedAt field before saving
 jobRoleSchema.pre('save', function(next) {
+  if (this.isNew && !this.jobId) {
+    // Generate unique job ID like "JOB-2024-001"
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(Math.random() * 9000) + 1000;
+    this.jobId = `JOB-${year}-${randomNum}`;
+  }
   this.updatedAt = Date.now();
   next();
 });

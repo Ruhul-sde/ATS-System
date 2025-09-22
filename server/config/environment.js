@@ -7,7 +7,7 @@ export const config = {
   // API Configuration
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+    apiUrl: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
     rateLimitDelay: 1000, // 1 second between requests
     maxRetries: 3,
   },

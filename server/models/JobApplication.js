@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const jobApplicationSchema = new mongoose.Schema({
+  candidateId: {
+    type: String,
+    unique: true,
+    required: true
+  },
   applicant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -77,8 +82,15 @@ jobApplicationSchema.index({ job: 1, status: 1 });
 jobApplicationSchema.index({ applicant: 1 });
 jobApplicationSchema.index({ createdAt: -1 });
 
-// Add status to history before saving
+// Generate unique candidateId and add status to history before saving
 jobApplicationSchema.pre('save', function(next) {
+  if (this.isNew && !this.candidateId) {
+    // Generate unique candidate ID like "CAND-2024-001"
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(Math.random() * 9000) + 1000;
+    this.candidateId = `CAND-${year}-${randomNum}`;
+  }
+  
   if (this.isModified('status') && !this.isNew) {
     this.statusHistory.push({
       status: this.status,

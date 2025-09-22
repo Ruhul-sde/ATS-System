@@ -304,6 +304,64 @@ app.get('/api/admin/dashboard/jobs', async (req, res) => {
   }
 });
 
+// Get job details
+app.get('/api/jobs/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await JobRole.findById(jobId);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: job
+    });
+
+  } catch (error) {
+    console.error('Error fetching job:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch job details'
+    });
+  }
+});
+
+// Get individual candidate details
+app.get('/api/admin/candidates/:candidateId', async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+
+    // Find candidate by ID
+    const candidate = await User.findById(candidateId);
+
+    if (!candidate) {
+      return res.status(404).json({
+        success: false,
+        message: 'Candidate not found'
+      });
+    }
+
+    // Return candidate data
+    res.json({
+      success: true,
+      data: candidate
+    });
+
+  } catch (error) {
+    console.error('Error fetching candidate:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch candidate details'
+    });
+  }
+});
+
 // Admin candidates endpoint - comprehensive candidate data
 app.get('/api/admin/candidates', async (req, res) => {
   try {
@@ -373,6 +431,8 @@ app.get('/api/admin/candidates', async (req, res) => {
       return {
         _id: app._id,
         id: app._id,
+        candidateId: app.candidateId || `CAND-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
+        jobId: job?.jobId || `JOB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`,
         name: applicant ? `${applicant.firstName} ${applicant.lastName}` : 'Unknown',
         email: applicant?.email || 'No email',
         position: job?.title || 'Position not specified',

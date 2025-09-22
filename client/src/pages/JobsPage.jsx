@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -268,7 +267,7 @@ export default function JobsPage() {
       requirements: {
         education: selectedJob.requirements?.education || '',
         certifications: selectedJob.requirements?.certifications ? selectedJob.requirements.certifications.join(', ') : '',
-        languages: selectedJob.requirements?.languages ? selectedJob.requirements.languages.map(l => l.language || l).join(', ') : ''
+        languages: selectedJob.requirements?.languages ? selectedJob.requirements.languages.map(l => l || '').join(', ') : ''
       },
       reportingManager: {
         title: selectedJob.reportingManager?.title || '',
@@ -848,7 +847,7 @@ export default function JobsPage() {
                         📄 View Resume
                       </a>
                     )}
-                    
+
                     {application.status === 'pending' && (
                       <button 
                         onClick={() => updateApplicationStatus(application._id, 'reviewing')}
@@ -857,7 +856,7 @@ export default function JobsPage() {
                         📋 Review
                       </button>
                     )}
-                    
+
                     {(application.status === 'reviewing' || application.status === 'pending') && (
                       <button 
                         onClick={() => updateApplicationStatus(application._id, 'shortlisted')}
@@ -866,7 +865,7 @@ export default function JobsPage() {
                         ⭐ Shortlist
                       </button>
                     )}
-                    
+
                     {application.status === 'shortlisted' && (
                       <button 
                         onClick={() => updateApplicationStatus(application._id, 'interview-scheduled')}
@@ -875,7 +874,7 @@ export default function JobsPage() {
                         🎤 Schedule Interview
                       </button>
                     )}
-                    
+
                     <button 
                       onClick={() => updateApplicationStatus(application._id, 'rejected')}
                       className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
@@ -898,7 +897,12 @@ export default function JobsPage() {
         <div className="flex items-center space-x-4">
           <div className="text-4xl">{getDepartmentIcon(job.department)}</div>
           <div>
-            <h3 className="text-2xl font-bold text-white mb-2">{job.title}</h3>
+            <div className="flex items-center space-x-3 mb-2">
+              <h3 className="text-2xl font-bold text-white">{job.title}</h3>
+              <span className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 text-sm rounded-lg border border-cyan-500/30 font-mono">
+                {job.jobId || `JOB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`}
+              </span>
+            </div>
             <div className="flex items-center space-x-4 text-gray-400">
               <span className="flex items-center space-x-1">
                 <span>🏢</span>
@@ -1058,7 +1062,7 @@ export default function JobsPage() {
               />
               <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
             </div>
-            
+
             <select
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
@@ -1081,7 +1085,7 @@ export default function JobsPage() {
               <option value="views">Most Views</option>
               <option value="urgency">By Urgency</option>
             </select>
-            
+
             <button 
               onClick={() => setShowCreateModal(true)}
               className="bg-gradient-to-r from-[#455185] to-[#ED1B2F] hover:from-[#364068] hover:to-[#d4162a] text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2 shadow-lg"

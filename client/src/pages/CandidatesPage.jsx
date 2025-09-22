@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -33,14 +32,14 @@ export default function CandidatesPage() {
     try {
       setLoading(true);
       console.log('Loading candidates...');
-      
+
       const response = await apiCall('/api/admin/candidates');
       console.log('Response status:', response.status);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Candidates data received:', data);
-        
+
         if (data.success && Array.isArray(data.data)) {
           setCandidates(data.data);
           calculateStats(data.data);
@@ -109,7 +108,7 @@ export default function CandidatesPage() {
       if (response.ok) {
         // Refresh candidates list
         await loadCandidates();
-        
+
         // Show success message (you might want to add a toast notification)
         console.log('Candidate status updated successfully');
       } else {
@@ -186,7 +185,7 @@ export default function CandidatesPage() {
       switch (sortBy) {
         case 'score': return (b.matchScore || 0) - (a.matchScore || 0);
         case 'name': return (a.name || '').localeCompare(b.name || '');
-        case 'date': return new Date(b.appliedDate || b.createdAt) - new Date(a.appliedDate || a.createdAt);
+        case 'date': return new Date(b.appliedDate || a.createdAt) - new Date(a.appliedDate || a.createdAt);
         default: return 0;
       }
     });
@@ -348,7 +347,17 @@ export default function CandidatesPage() {
         >
           View Details
         </button>
-        
+
+        {candidate.resume?.fileUrl && (
+          <a
+            href={`/ats?candidateId=${candidate._id || candidate.id}${candidate.jobId ? `&jobId=${candidate.jobId}` : ''}`}
+            className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105"
+            title="ATS Analysis"
+          >
+            🎯
+          </a>
+        )}
+
         {candidate.resume?.fileUrl && (
           <a
             href={candidate.resume.fileUrl}
@@ -360,7 +369,7 @@ export default function CandidatesPage() {
             📄
           </a>
         )}
-        
+
         {candidate.status === 'pending' && (
           <button 
             onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'reviewing')}
@@ -369,7 +378,7 @@ export default function CandidatesPage() {
             Review
           </button>
         )}
-        
+
         {(candidate.status === 'reviewing' || candidate.status === 'pending') && (
           <button 
             onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'shortlisted')}
@@ -378,7 +387,7 @@ export default function CandidatesPage() {
             Shortlist
           </button>
         )}
-        
+
         {candidate.status === 'shortlisted' && (
           <button 
             onClick={() => updateCandidateStatus(candidate._id || candidate.id, 'interview-scheduled')}
@@ -387,7 +396,7 @@ export default function CandidatesPage() {
             Schedule Interview
           </button>
         )}
-        
+
         <button className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">
           💬
         </button>
@@ -938,6 +947,20 @@ export default function CandidatesPage() {
               <h3 className="text-lg font-bold text-white mb-4 flex items-center">
                 <span className="mr-2">📊</span> Application Details
               </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
+                <div>
+                  <span className="text-gray-400 block">Candidate ID:</span>
+                  <span className="text-cyan-400 font-mono font-bold">{selectedCandidate.candidateId || selectedCandidate.id}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Job ID:</span>
+                  <span className="text-purple-400 font-mono font-bold">{selectedCandidate.jobId || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 block">Application ID:</span>
+                  <span className="text-pink-400 font-mono text-xs">{selectedCandidate.applicationId || selectedCandidate._id}</span>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <span className="text-gray-400 block">Applied Date:</span>
@@ -953,8 +976,7 @@ export default function CandidatesPage() {
                 <div>
                   <span className="text-gray-400 block">ATS Match Score:</span>
                   <span className={`font-bold ${getScoreColor(selectedCandidate.atsMatch || selectedCandidate.matchScore || 0)}`}>
-                    {selectedCandidate.atsMatch || selectedCandidate.matchScore || 0}%
-                  </span>
+                    {selectedCandidate.atsMatch || selectedCandidate.matchScore || 0}%</span>
                 </div>
                 <div>
                   <span className="text-gray-400 block">Profile Views:</span>
@@ -976,7 +998,7 @@ export default function CandidatesPage() {
                   Review Application
                 </button>
               )}
-              
+
               {(selectedCandidate.status === 'reviewing' || selectedCandidate.status === 'pending') && (
                 <button 
                   onClick={() => {
@@ -988,7 +1010,7 @@ export default function CandidatesPage() {
                   Shortlist Candidate
                 </button>
               )}
-              
+
               {selectedCandidate.status === 'shortlisted' && (
                 <button 
                   onClick={() => {
@@ -1000,7 +1022,7 @@ export default function CandidatesPage() {
                   Schedule Interview
                 </button>
               )}
-              
+
               <button 
                 onClick={() => setSelectedCandidate(null)}
                 className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-colors"
