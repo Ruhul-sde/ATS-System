@@ -169,13 +169,28 @@ export default function ATSPage() {
         });
         
         setJobApplications(updatedApplications);
-        setMessage({ type: 'success', text: 'ATS score calculated successfully!' });
+        
+        // Show appropriate message based on analysis type
+        if (result.data.fallbackAnalysis) {
+          setMessage({ 
+            type: 'info', 
+            text: 'ATS score calculated using backup analysis due to high API demand. For detailed analysis, please try again later.' 
+          });
+        } else {
+          setMessage({ type: 'success', text: 'ATS score calculated successfully!' });
+        }
       } else {
         throw new Error(result.error || 'Analysis failed');
       }
     } catch (error) {
       console.error('Error calculating ATS score:', error);
-      setMessage({ type: 'error', text: `Failed to calculate ATS score: ${error.message}` });
+      
+      let errorMessage = `Failed to calculate ATS score: ${error.message}`;
+      if (error.message.includes('overloaded')) {
+        errorMessage += ' The AI service is currently experiencing high demand. Please try again in a few moments.';
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setAnalysisLoading(false);
     }
@@ -446,11 +461,20 @@ export default function ATSPage() {
               {application.aiAnalysis && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                   <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <h4 className="text-white font-semibold mb-2">📊 ATS Scores</h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-white font-semibold">📊 ATS Scores</h4>
+                      {application.aiAnalysis.fallbackAnalysis && (
+                        <span className="text-xs text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded" title="Basic analysis due to API limits">
+                          Basic
+                        </span>
+                      )}
+                    </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-400">Overall:</span>
-                        <span className="text-white font-bold">{application.aiAnalysis.atsScore?.overall || 0}%</span>
+                        <span className={`font-bold ${getScoreColor(application.aiAnalysis.atsScore?.overall || 0).split(' ')[0]}`}>
+                          {application.aiAnalysis.atsScore?.overall || 0}%
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Keywords:</span>
@@ -463,6 +487,10 @@ export default function ATSPage() {
                       <div className="flex justify-between">
                         <span className="text-gray-400">Experience:</span>
                         <span className="text-white">{application.aiAnalysis.atsScore?.experienceRelevance || 0}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Education:</span>
+                        <span className="text-white">{application.aiAnalysis.atsScore?.educationFit || 0}%</span>
                       </div>
                     </div>
                   </div>
