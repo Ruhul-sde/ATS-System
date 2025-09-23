@@ -36,7 +36,7 @@ export class GeminiService {
     }
 
     const prompt = `
-You are an advanced ATS (Applicant Tracking System) analyzer. Perform a comprehensive resume analysis against the job description with focus on keyword matching, semantic understanding, and ATS compatibility.
+You are an advanced ATS (Applicant Tracking System) analyzer. Perform a comprehensive resume analysis against the job description with focus on keyword matching, semantic understanding, ATS compatibility, and detailed information extraction.
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -45,18 +45,38 @@ RESUME:
 ${resumeText}
 
 ANALYSIS REQUIREMENTS:
-1. Keyword Matching: Identify exact matches, synonyms, and related terms
-2. ATS Compatibility: Evaluate resume format and structure for ATS parsing
-3. Skills Assessment: Technical and soft skills alignment
-4. Experience Evaluation: Years, relevance, and progression
-5. Education Matching: Degree relevance and requirements fulfillment
-6. Cultural Fit Indicators: Leadership, teamwork, communication
-7. Gap Analysis: Missing critical requirements
-8. Interview Readiness: Overall candidate preparedness
+1. Extract detailed personal and professional information
+2. Keyword Matching: Identify exact matches, synonyms, and related terms
+3. ATS Compatibility: Evaluate resume format and structure for ATS parsing
+4. Skills Assessment: Technical and soft skills alignment
+5. Experience Evaluation: Years, relevance, and progression
+6. Education Matching: Degree relevance and requirements fulfillment
+7. Cultural Fit Indicators: Leadership, teamwork, communication
+8. Gap Analysis: Missing critical requirements
+9. Interview Readiness: Overall candidate preparedness
 
 Respond in this exact JSON format:
 {
   "matchPercentage": number,
+  "extractedInfo": {
+    "name": "Full Name",
+    "firstName": "First Name",
+    "lastName": "Last Name", 
+    "email": "email@example.com",
+    "phone": "phone number",
+    "location": "City, State",
+    "currentRole": "Current Job Title",
+    "currentCompany": "Current Company",
+    "totalYearsExperience": "Total years of experience",
+    "relevantExperience": "Years of relevant experience",
+    "education": "Highest degree",
+    "degree": "Degree name",
+    "university": "University name",
+    "graduationYear": year,
+    "skills": ["skill1", "skill2"],
+    "certifications": ["cert1", "cert2"],
+    "languages": ["language1", "language2"]
+  },
   "atsScore": {
     "overall": number,
     "keywordMatch": number,
@@ -165,6 +185,25 @@ Respond in this exact JSON format:
           // Validate and enhance the response with dynamic scoring
           const enhancedResult = {
             matchPercentage: Math.min(100, Math.max(0, parsedResult.matchPercentage || 0)),
+            extractedInfo: {
+              name: parsedResult.extractedInfo?.name || 'Unknown',
+              firstName: parsedResult.extractedInfo?.firstName || parsedResult.extractedInfo?.name?.split(' ')[0] || 'Unknown',
+              lastName: parsedResult.extractedInfo?.lastName || parsedResult.extractedInfo?.name?.split(' ').slice(1).join(' ') || '',
+              email: parsedResult.extractedInfo?.email || '',
+              phone: parsedResult.extractedInfo?.phone || '',
+              location: parsedResult.extractedInfo?.location || '',
+              currentRole: parsedResult.extractedInfo?.currentRole || '',
+              currentCompany: parsedResult.extractedInfo?.currentCompany || '',
+              totalYearsExperience: parsedResult.extractedInfo?.totalYearsExperience || '',
+              relevantExperience: parsedResult.extractedInfo?.relevantExperience || '',
+              education: parsedResult.extractedInfo?.education || '',
+              degree: parsedResult.extractedInfo?.degree || '',
+              university: parsedResult.extractedInfo?.university || '',
+              graduationYear: parsedResult.extractedInfo?.graduationYear || null,
+              skills: Array.isArray(parsedResult.extractedInfo?.skills) ? parsedResult.extractedInfo.skills : [],
+              certifications: Array.isArray(parsedResult.extractedInfo?.certifications) ? parsedResult.extractedInfo.certifications : [],
+              languages: Array.isArray(parsedResult.extractedInfo?.languages) ? parsedResult.extractedInfo.languages : []
+            },
             atsScore: {
               overall: Math.min(100, Math.max(0, parsedResult.atsScore?.overall || parsedResult.matchPercentage || 0)),
               keywordMatch: Math.min(100, Math.max(0, parsedResult.atsScore?.keywordMatch || 0)),
@@ -463,6 +502,11 @@ Provide analysis in this JSON format:
                            resumeLower.includes('lead') ? 'senior' :
                            resumeLower.includes('junior') ? 'entry' : 'mid';
     
+    // Extract basic info using regex patterns
+    const emailMatch = resumeText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    const phoneMatch = resumeText.match(/(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+    const nameMatch = resumeText.split('\n')[0]?.trim();
+    
     // Calculate basic match percentage
     const matchPercentage = Math.min(95, Math.max(30, 
       (matchingSkills.length * 10) + 
@@ -471,6 +515,25 @@ Provide analysis in this JSON format:
     ));
 
     return {
+      extractedInfo: {
+        name: nameMatch || 'Unknown',
+        firstName: nameMatch?.split(' ')[0] || 'Unknown',
+        lastName: nameMatch?.split(' ').slice(1).join(' ') || '',
+        email: emailMatch ? emailMatch[0] : '',
+        phone: phoneMatch ? phoneMatch[0] : '',
+        location: 'Not specified',
+        currentRole: 'Not specified',
+        currentCompany: 'Not specified',
+        totalYearsExperience: resumeLower.includes('year') ? 'Experience mentioned' : '',
+        relevantExperience: 'Not specified',
+        education: resumeLower.includes('degree') ? 'Degree mentioned' : 'Not specified',
+        degree: 'Not specified',
+        university: 'Not specified',
+        graduationYear: null,
+        skills: matchingSkills,
+        certifications: [],
+        languages: ['English']
+      },
       matchPercentage,
       atsScore: {
         overall: matchPercentage,

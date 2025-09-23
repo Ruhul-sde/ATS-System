@@ -14,6 +14,7 @@ import JobApplication from "./models/JobApplication.js";
 import authRoutes from "./routes/auth.js";
 import jobSeekerRoutes from "./routes/jobSeeker.js";
 import jobRoutes from "./routes/jobs.js";
+import candidatesRoutes from "./routes/candidates.js";
 import fs from "fs"; // Import fs module
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,8 +39,32 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Serve uploaded files with proper headers
+app.use("/uploads", (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, "../uploads"), {
+  setHeaders: (res, path) => {
+    // Set proper MIME types for different file types
+    if (path.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+    } else if (path.endsWith('.doc')) {
+      res.setHeader('Content-Type', 'application/msword');
+    } else if (path.endsWith('.docx')) {
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    }
+    res.setHeader('Content-Disposition', 'inline');
+  }
+}));
 
 // Ensure upload directories exist
 const uploadDirs = [
@@ -78,6 +103,7 @@ const upload = multer({
 app.use("/api/auth", authRoutes);
 app.use("/api/job-seeker", jobSeekerRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/candidates", candidatesRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -494,7 +520,7 @@ app.get("/api/admin/candidates", async (req, res) => {
         expectedSalary: applicant?.profile?.expectedSalary || "Not specified",
         appliedDate: app.createdAt,
         createdAt: app.createdAt,
-        avatar: getRandomAvatar(),
+        avatar: applicant?.profile?.profilePictureUrl || getRandomAvatar(), // Use profile picture if available, otherwise fallback
         skills: Array.isArray(skills)
           ? skills
           : ["JavaScript", "React", "Node.js"],
@@ -1343,13 +1369,12 @@ async function updateJobStatistics(jobId) {
 
     await JobRole.findByIdAndUpdate(jobId, {
       applications:
-        statsMap.pending ||
-        0 + statsMap.reviewing ||
-        0 + statsMap.shortlisted ||
-        0 + statsMap["interview-scheduled"] ||
-        0 + statsMap.hired ||
-        0 + statsMap.rejected ||
-        0,
+        (statsMap.pending || 0) +
+        (statsMap.reviewing || 0) +
+        (statsMap.shortlisted || 0) +
+        (statsMap["interview-scheduled"] || 0) +
+        (statsMap.hired || 0) +
+        (statsMap.rejected || 0),
       shortlisted: statsMap.shortlisted || 0,
       interviewed: statsMap["interview-scheduled"] || 0,
       hired: statsMap.hired || 0,
@@ -1469,6 +1494,92 @@ app.post("/api/analyze/batch", async (req, res) => {
       `data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`,
     );
     res.end();
+  }
+});
+
+// Confirm candidate endpoint
+app.post("/api/admin/confirm-candidate", async (req, res) => {
+  try {
+    const candidateData = req.body;
+
+    // Extract information from the analysis result
+    const extractedInfo = candidateData.extractedInfo || {};
+    
+    // Create user profile data
+    const profileData = {
+      phone: extractedInfo.phone || '',
+      bio: candidateData.overallAssessment || '',
+      skills: extractedInfo.skills || [],
+      experience: extractedInfo.experience || '',
+      education: extractedInfo.education || '',
+      currentCompany: extractedInfo.currentCompany || '',
+      currentDesignation: extractedInfo.currentRole || '',
+      totalExperience: extractedInfo.totalYearsExperience || '',
+      relevantExperience: extractedInfo.relevantExperience || '',
+      degree: extractedInfo.degree || '',
+      university: extractedInfo.university || '',
+      graduationYear: extractedInfo.graduationYear || null,
+      certifications: extractedInfo.certifications || [],
+      languages: extractedInfo.languages?.map(lang => ({ name: lang, proficiency: 'Unknown' })) || [],
+      address: {
+        city: extractedInfo.location || '',
+        state: extractedInfo.state || '',
+        country: 'India'
+      }
+    };
+
+    // Create new user
+    const newUser = new User({
+      firstName: extractedInfo.firstName || extractedInfo.name?.split(' ')[0] || 'Unknown',
+      lastName: extractedInfo.lastName || extractedInfo.name?.split(' ').slice(1).join(' ') || '',
+      email: extractedInfo.email || `candidate.${Date.now()}@example.com`,
+      password: 'tempPassword123', // Temporary password
+      role: 'applicant',
+      profile: profileData,
+      isActive: true,
+      isEmailVerified: false
+    });
+
+    const savedUser = await newUser.save();
+
+    // Create job application
+    const application = new JobApplication({
+      applicant: savedUser._id,
+      job: candidateData.jobId,
+      status: 'pending',
+      coverLetter: `Auto-generated application from resume analysis. Original file: ${candidateData.fileName}`,
+      aiAnalysis: {
+        matchPercentage: candidateData.matchPercentage || 0,
+        matchingSkills: candidateData.matchingSkills || [],
+        missingSkills: candidateData.missingSkills || [],
+        experienceMatch: candidateData.experienceMatch || 'unknown',
+        educationRelevance: candidateData.educationRelevance || 'unknown',
+        strengths: candidateData.strengths || [],
+        weaknesses: candidateData.weaknesses || [],
+        recommendations: candidateData.recommendations || [],
+        overallAssessment: candidateData.overallAssessment || 'Resume processed from upload',
+        interviewReadiness: candidateData.interviewReadiness || 'unknown',
+        analysisDate: new Date()
+      }
+    });
+
+    const savedApplication = await application.save();
+
+    res.json({
+      success: true,
+      data: {
+        user: savedUser,
+        application: savedApplication,
+        message: 'Candidate successfully confirmed and added to database'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error confirming candidate:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

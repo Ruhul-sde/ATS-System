@@ -360,6 +360,421 @@ export default function ATSPage() {
     </div>
   );
 
+  const ResumeUploadView = () => {
+    const [uploadedResumes, setUploadedResumes] = useState([]);
+    const [processingResults, setProcessingResults] = useState([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+
+    const handleDrag = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.type === "dragenter" || e.type === "dragover") {
+        setDragActive(true);
+      } else if (e.type === "dragleave") {
+        setDragActive(false);
+      }
+    };
+
+    const handleDrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        const droppedFiles = Array.from(e.dataTransfer.files);
+        const validFiles = droppedFiles.filter(file => 
+          file.type === 'application/pdf' || 
+          file.name.endsWith('.docx') || 
+          file.name.endsWith('.doc')
+        );
+        
+        if (validFiles.length > 0) {
+          setUploadedResumes(prev => [...prev, ...validFiles]);
+        }
+      }
+    };
+
+    const handleFileInput = (e) => {
+      const selectedFiles = Array.from(e.target.files);
+      setUploadedResumes(prev => [...prev, ...selectedFiles]);
+    };
+
+    const removeFile = (index) => {
+      setUploadedResumes(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const processResumes = async () => {
+      if (!selectedJob || uploadedResumes.length === 0) {
+        setMessage({ type: 'error', text: 'Please select a job and upload resumes first' });
+        return;
+      }
+
+      setIsProcessing(true);
+      setMessage({ type: 'info', text: 'Processing resumes...' });
+
+      try {
+        const jobDescription = `
+          Position: ${selectedJob.title}
+          Department: ${selectedJob.department}
+          Experience Level: ${selectedJob.experienceLevel}
+          Location: ${selectedJob.location}
+          Work Mode: ${selectedJob.workMode}
+          
+          Required Skills: ${(selectedJob.skills || []).join(', ')}
+          
+          Job Description: ${selectedJob.description}
+          
+          Requirements:
+          Education: ${selectedJob.requirements?.education || ''}
+          Certifications: ${(selectedJob.requirements?.certifications || []).join(', ')}
+          
+          Salary Range: ${selectedJob.salaryRange?.min ? `$${selectedJob.salaryRange.min}k` : ''} ${selectedJob.salaryRange?.max ? `- $${selectedJob.salaryRange.max}k` : ''}
+        `;
+
+        const formData = new FormData();
+        uploadedResumes.forEach(file => {
+          formData.append('resumes', file);
+        });
+        formData.append('jobDescription', jobDescription);
+
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('Processing results:', result);
+          
+          // Transform results to match expected format
+          const transformedResults = result.results.map(res => ({
+            ...res,
+            extractedInfo: res.extractedInfo || {},
+            aiAnalysis: res.aiAnalysis || res,
+            matchPercentage: res.matchPercentage || 0,
+            overallAssessment: res.overallAssessment || 'Analysis completed',
+            strengths: res.strengths || [],
+            weaknesses: res.weaknesses || [],
+            status: res.status || 'success'
+          }));
+          
+          setProcessingResults(transformedResults);
+          setMessage({ 
+            type: 'success', 
+            text: `Successfully processed ${transformedResults.length} resumes. Review candidates below to confirm and add to database.` 
+          });
+        } else {
+          throw new Error(result.message || 'Processing failed');
+        }
+      } catch (error) {
+        console.error('Resume processing error:', error);
+        setMessage({ type: 'error', text: `Processing failed: ${error.message}` });
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    const confirmCandidate = async (candidateData) => {
+      try {
+        console.log('Confirming candidate:', candidateData);
+        
+        setMessage({ type: 'info', text: 'Adding candidate to database...' });
+        
+        const response = await apiCall('/api/admin/confirm-candidate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...candidateData,
+            jobId: selectedJob._id
+          })
+        });
+
+        const result = await response.json();
+        console.log('Confirm candidate response:', result);
+
+        if (response.ok && result.success) {
+          setMessage({ 
+            type: 'success', 
+            text: `✅ ${candidateData.extractedInfo?.name || candidateData.fileName} successfully added to candidate database!` 
+          });
+          
+          // Remove from processing results
+          setProcessingResults(prev => 
+            prev.filter(result => result.fileName !== candidateData.fileName)
+          );
+          
+          // Refresh candidates if we're on that tab
+          if (activeTab === 'candidates') {
+            loadJobApplications(selectedJob._id);
+          }
+        } else {
+          throw new Error(result.error || 'Failed to confirm candidate');
+        }
+      } catch (error) {
+        console.error('Error confirming candidate:', error);
+        setMessage({ type: 'error', text: `Failed to add candidate: ${error.message}` });
+      }
+    };
+
+    return (
+      <div className="space-y-8">
+        {/* Upload Section */}
+        <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+          <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <span className="mr-3">📤</span>
+            Resume Upload & Processing
+          </h3>
+          
+          <div
+            className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
+              dragActive
+                ? 'border-blue-400 bg-blue-400/10 scale-105'
+                : 'border-gray-600 hover:border-gray-500 hover:bg-white/5'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <input
+              id="resume-upload"
+              type="file"
+              multiple
+              accept=".pdf,.docx,.doc"
+              onChange={handleFileInput}
+              className="hidden"
+            />
+            
+            <div className="space-y-4">
+              <div className="text-6xl opacity-50">📁</div>
+              
+              <div>
+                <label 
+                  htmlFor="resume-upload" 
+                  className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl cursor-pointer font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                >
+                  <span>📎</span>
+                  <span>Choose Resume Files</span>
+                </label>
+              </div>
+              
+              <p className="text-gray-400 text-sm">
+                or drag and drop resume files here
+              </p>
+              
+              <p className="text-gray-500 text-xs">
+                Supports PDF, DOC, DOCX files • Max 10MB per file
+              </p>
+            </div>
+          </div>
+
+          {/* Uploaded Files */}
+          {uploadedResumes.length > 0 && (
+            <div className="mt-6 space-y-3">
+              <h4 className="text-lg font-semibold text-white">Uploaded Files ({uploadedResumes.length})</h4>
+              {uploadedResumes.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">
+                      {file.type === 'application/pdf' ? '📄' : '📝'}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{file.name}</p>
+                      <p className="text-gray-400 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="px-3 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              
+              <button
+                onClick={processResumes}
+                disabled={isProcessing || !selectedJob}
+                className="w-full mt-4 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProcessing ? 'Processing Resumes...' : 'Process & Analyze Resumes'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Processing Results */}
+        {processingResults.length > 0 && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 backdrop-blur-md rounded-2xl p-4 border border-green-500/20">
+              <h3 className="text-2xl font-bold text-white flex items-center">
+                <span className="mr-3">🎯</span>
+                Analysis Results - Pending Confirmation ({processingResults.length})
+              </h3>
+              <p className="text-green-300 mt-2">Review the extracted information below and confirm candidates to add them to your database.</p>
+            </div>
+            
+            {processingResults.map((result, index) => (
+              <div key={index} className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/20">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <h4 className="text-xl font-bold text-white">{result.fileName}</h4>
+                      {result.status === 'success' ? (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs rounded-full">✓ Processed</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded-full">✗ Error</span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Match Score:</span>
+                        <div className={`text-lg font-bold ${result.matchPercentage >= 80 ? 'text-green-400' : result.matchPercentage >= 60 ? 'text-yellow-400' : 'text-orange-400'}`}>
+                          {result.matchPercentage || 0}%
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block">Name:</span>
+                        <span className="text-white font-medium">{result.extractedInfo?.name || 'Not found'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block">Email:</span>
+                        <span className="text-white">{result.extractedInfo?.email || 'Not found'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 block">Phone:</span>
+                        <span className="text-white">{result.extractedInfo?.phone || 'Not found'}</span>
+                      </div>
+                    </div>
+                    
+                    {result.error && (
+                      <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                        <p className="text-red-300 text-sm">Error: {result.error}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex space-x-2 ml-4">
+                    {result.status === 'success' ? (
+                      <>
+                        <button
+                          onClick={() => confirmCandidate(result)}
+                          className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
+                        >
+                          ✓ Confirm & Add
+                        </button>
+                        <button
+                          onClick={() => setProcessingResults(prev => prev.filter((_, i) => i !== index))}
+                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
+                        >
+                          ✗ Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setProcessingResults(prev => prev.filter((_, i) => i !== index))}
+                        className="px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-lg font-medium transition-all duration-300"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Show extracted information only for successful analyses */}
+                {result.status === 'success' && (
+                  <>
+                    {/* Extracted Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h5 className="text-white font-semibold mb-2">👤 Personal Info</h5>
+                        <div className="space-y-1 text-sm">
+                          <div><span className="text-gray-400">Name:</span> <span className="text-white">{result.extractedInfo?.name || result.extractedInfo?.firstName + ' ' + result.extractedInfo?.lastName || 'Not found'}</span></div>
+                          <div><span className="text-gray-400">Email:</span> <span className="text-white">{result.extractedInfo?.email || 'Not found'}</span></div>
+                          <div><span className="text-gray-400">Phone:</span> <span className="text-white">{result.extractedInfo?.phone || 'Not found'}</span></div>
+                          <div><span className="text-gray-400">Location:</span> <span className="text-white">{result.extractedInfo?.location || 'Not specified'}</span></div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h5 className="text-white font-semibold mb-2">🎓 Education & Experience</h5>
+                        <div className="space-y-1 text-sm">
+                          <div><span className="text-gray-400">Education:</span> <span className="text-white">{result.extractedInfo?.education || result.extractedInfo?.degree || 'Not specified'}</span></div>
+                          <div><span className="text-gray-400">Experience:</span> <span className="text-white">{result.extractedInfo?.totalYearsExperience || result.extractedInfo?.experience || 'Not specified'}</span></div>
+                          <div><span className="text-gray-400">Current Role:</span> <span className="text-white">{result.extractedInfo?.currentRole || 'Not specified'}</span></div>
+                          <div><span className="text-gray-400">University:</span> <span className="text-white">{result.extractedInfo?.university || 'Not specified'}</span></div>
+                        </div>
+                      </div>
+
+                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                        <h5 className="text-white font-semibold mb-2">🛠️ Skills & Languages</h5>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-400 block">Skills:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(result.extractedInfo?.skills || result.skillsAnalysis?.matchingSkills || []).slice(0, 6).map((skill, i) => (
+                                <span key={i} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">{skill}</span>
+                              ))}
+                              {!(result.extractedInfo?.skills || result.skillsAnalysis?.matchingSkills)?.length && (
+                                <span className="text-gray-400 text-xs">No skills extracted</span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block">Languages:</span>
+                            <span className="text-white">{(result.extractedInfo?.languages || []).join(', ') || 'Not specified'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400 block">Certifications:</span>
+                            <span className="text-white">{(result.extractedInfo?.certifications || []).join(', ') || 'None mentioned'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Analysis Summary */}
+                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <h5 className="text-white font-semibold mb-2 flex items-center">
+                        <span className="mr-2">🤖</span>
+                        AI Analysis Summary
+                        {result.fallbackAnalysis && (
+                          <span className="ml-2 text-xs text-yellow-400 bg-yellow-500/20 px-2 py-1 rounded" title="Basic analysis due to API limits">
+                            Basic Mode
+                          </span>
+                        )}
+                      </h5>
+                      <div className="text-sm text-gray-300 space-y-2">
+                        <p><strong>Overall Assessment:</strong> {result.overallAssessment || 'Analysis completed'}</p>
+                        {result.strengths && result.strengths.length > 0 && (
+                          <p><strong>Key Strengths:</strong> {result.strengths.slice(0, 3).join(', ')}</p>
+                        )}
+                        {result.hiringRecommendation && (
+                          <p><strong>Recommendation:</strong> 
+                            <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                              result.hiringRecommendation === 'strong-hire' ? 'bg-green-500/20 text-green-300' :
+                              result.hiringRecommendation === 'hire' ? 'bg-blue-500/20 text-blue-300' :
+                              result.hiringRecommendation === 'maybe' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-red-500/20 text-red-300'
+                            }`}>
+                              {result.hiringRecommendation.replace('-', ' ').toUpperCase()}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const CandidatesView = () => (
     <div className="space-y-8">
       {/* Controls */}
@@ -581,10 +996,15 @@ export default function ATSPage() {
               <div className="flex flex-wrap gap-3 pt-4 border-t border-white/10">
                 {application.applicant?.profile?.resume?.fileUrl && (
                   <a
-                    href={application.applicant.profile.resume.fileUrl}
+                    href={application.applicant.profile.resume.fileUrl.startsWith('http') ? application.applicant.profile.resume.fileUrl : `http://localhost:8000${application.applicant.profile.resume.fileUrl}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
+                    onClick={(e) => {
+                      const url = application.applicant.profile.resume.fileUrl.startsWith('http') ? application.applicant.profile.resume.fileUrl : `http://localhost:8000${application.applicant.profile.resume.fileUrl}`;
+                      window.open(url, '_blank');
+                      e.preventDefault();
+                    }}
                   >
                     📄 View Resume
                   </a>
@@ -725,6 +1145,16 @@ export default function ATSPage() {
                 📋 Job Overview
               </button>
               <button
+                onClick={() => setActiveTab('upload')}
+                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  activeTab === 'upload'
+                    ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                📤 Upload Resumes
+              </button>
+              <button
                 onClick={() => setActiveTab('candidates')}
                 className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                   activeTab === 'candidates'
@@ -737,7 +1167,9 @@ export default function ATSPage() {
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'overview' ? <JobOverview /> : <CandidatesView />}
+            {activeTab === 'overview' && <JobOverview />}
+            {activeTab === 'upload' && <ResumeUploadView />}
+            {activeTab === 'candidates' && <CandidatesView />}
           </>
         )}
 

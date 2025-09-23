@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -6,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import JobSeekerDashboard from './pages/JobSeekerDashboard';
 import ProfilePage from './pages/ProfilePage';
+import CandidatesDatabasePage from './pages/CandidatesDatabasePage';
 import ATSPage from './pages/ATSPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import JobsPage from './pages/JobsPage';
@@ -75,7 +75,7 @@ function AppContent() {
       <Route path="/login" element={
         !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
       } />
-      
+
       {/* Protected routes - Require authentication */}
       <Route path="/" element={
         isAuthenticated ? (
@@ -86,7 +86,7 @@ function AppContent() {
           <Navigate to="/login" replace />
         )
       } />
-      
+
       <Route path="/ats" element={
         isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
@@ -96,7 +96,7 @@ function AppContent() {
           <Navigate to="/login" replace />
         )
       } />
-      
+
       <Route path="/analytics" element={
         isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
@@ -106,7 +106,7 @@ function AppContent() {
           <Navigate to="/login" replace />
         )
       } />
-      
+
       <Route path="/jobs" element={
         isAuthenticated ? (
           <ProtectedRoute>
@@ -116,7 +116,7 @@ function AppContent() {
           <Navigate to="/login" replace />
         )
       } />
-      
+
       <Route path="/profile" element={
         isAuthenticated ? (
           <ProtectedRoute>
@@ -126,7 +126,7 @@ function AppContent() {
           <Navigate to="/login" replace />
         )
       } />
-      
+
       <Route path="/candidates" element={
         isAuthenticated ? (
           <ProtectedRoute requiredRole="admin">
@@ -137,9 +137,19 @@ function AppContent() {
         )
       } />
 
+      <Route path="/candidates-database" element={
+        isAuthenticated ? (
+          <ProtectedRoute requiredRole="admin">
+            <CandidatesDatabasePage />
+          </ProtectedRoute>
+        ) : (
+          <Navigate to="/login" replace />
+        )
+      } />
+
       {/* Logout route */}
       <Route path="/logout" element={<LogoutHandler />} />
-      
+
       {/* Catch all - redirect to appropriate page */}
       <Route path="*" element={
         <Navigate to={isAuthenticated ? "/" : "/login"} replace />
@@ -151,7 +161,7 @@ function AppContent() {
 // Logout Handler Component
 function LogoutHandler() {
   const { logout } = useAuth();
-  
+
   React.useEffect(() => {
     const handleLogout = async () => {
       try {
@@ -163,7 +173,7 @@ function LogoutHandler() {
         window.location.href = '/login';
       }
     };
-    
+
     handleLogout();
   }, [logout]);
 
