@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 const jobApplicationSchema = new mongoose.Schema({
+  candidateId: {
+    type: String,
+    unique: true,
+    required: false
+  },
   applicant: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -77,15 +82,49 @@ jobApplicationSchema.index({ job: 1, status: 1 });
 jobApplicationSchema.index({ applicant: 1 });
 jobApplicationSchema.index({ createdAt: -1 });
 
-// Add status to history before saving
-jobApplicationSchema.pre('save', function(next) {
-  if (this.isModified('status') && !this.isNew) {
-    this.statusHistory.push({
-      status: this.status,
-      changedAt: new Date()
-    });
+// Generate unique candidateId and add status to history before saving
+jobApplicationSchema.pre('save', async function(next) {
+  try {
+    if (this.isNew && !this.candidateId) {
+      // Generate unique candidate ID like "CAND-2024-001"
+      const year = new Date().getFullYear();
+      let attempts = 0;
+      let isUnique = false;
+
+      while (!isUnique && attempts < 10) {
+        const randomNum = Math.floor(Math.random() * 9000) + 1000;
+        const generatedId = `CAND-${year}-${randomNum}`;
+
+        const existing = await this.constructor.findOne({ candidateId: generatedId });
+        if (!existing) {
+          this.candidateId = generatedId;
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isUnique) {
+        // Fallback with timestamp
+        this.candidateId = `CAND-${year}-${Date.now()}`;
+      }
+    }
+
+    // Ensure candidateId exists before saving
+    if (!this.candidateId) {
+      const year = new Date().getFullYear();
+      this.candidateId = `CAND-${year}-${Date.now()}`;
+    }
+    
+    if (this.isModified('status') && !this.isNew) {
+      this.statusHistory.push({
+        status: this.status,
+        changedAt: new Date()
+      });
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 export default mongoose.model('JobApplication', jobApplicationSchema);

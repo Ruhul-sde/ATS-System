@@ -258,9 +258,14 @@ router.post('/upload-profile-picture', authenticateToken, (req, res, next) => {
       });
     }
 
+    // Generate full URL for profile picture
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.SERVER_URL || `https://${req.get('host')}` 
+      : `http://localhost:${process.env.PORT || 8000}`;
+    
     const profilePictureData = {
       fileName: req.file.originalname,
-      fileUrl: `/uploads/profile-pictures/${req.file.filename}`,
+      fileUrl: `${baseUrl}/uploads/profile-pictures/${req.file.filename}`,
       uploadDate: new Date()
     };
 
@@ -324,9 +329,14 @@ router.post('/upload-resume', authenticateToken, (req, res, next) => {
       });
     }
 
+    // Generate full URL for resume
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? process.env.SERVER_URL || `https://${req.get('host')}` 
+      : `http://localhost:${process.env.PORT || 8000}`;
+    
     const resumeData = {
       fileName: req.file.originalname,
-      fileUrl: `/uploads/resumes/${req.file.filename}`,
+      fileUrl: `${baseUrl}/uploads/resumes/${req.file.filename}`,
       uploadDate: new Date()
     };
 

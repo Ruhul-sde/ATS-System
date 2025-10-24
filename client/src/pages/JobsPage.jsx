@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -17,6 +16,36 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState('newest');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Predefined options for dropdowns
+  const skillOptions = [
+    'JavaScript', 'Python', 'Java', 'React', 'Node.js', 'HTML', 'CSS', 'SQL', 'MongoDB', 'Express.js',
+    'Vue.js', 'Angular', 'TypeScript', 'PHP', 'Laravel', 'Django', 'Flask', 'Spring Boot', 'AWS', 'Azure',
+    'Docker', 'Kubernetes', 'Git', 'REST APIs', 'GraphQL', 'Redux', 'Next.js', 'Tailwind CSS', 'Bootstrap',
+    'MySQL', 'PostgreSQL', 'Firebase', 'Machine Learning', 'Data Analysis', 'Project Management', 'Agile',
+    'Scrum', 'UI/UX Design', 'Figma', 'Adobe Creative Suite', 'Marketing', 'SEO', 'Content Writing',
+    'Social Media Management', 'Sales', 'Customer Service', 'Team Leadership', 'Communication'
+  ];
+
+  const departmentOptions = [
+    'Engineering', 'Product', 'Design', 'Marketing', 'Sales', 'Finance', 'HR', 'Operations', 'Data Science',
+    'DevOps', 'QA', 'Security', 'Legal', 'Customer Success', 'Support', 'Business Development'
+  ];
+
+  const benefitOptions = [
+    'Health Insurance', 'Dental Insurance', 'Vision Insurance', '401(k)', 'Flexible PTO', 'Remote Work',
+    'Flexible Hours', 'Stock Options', 'Professional Development', 'Gym Membership', 'Free Lunch',
+    'Commuter Benefits', 'Maternity/Paternity Leave', 'Life Insurance', 'Disability Insurance',
+    'Learning Budget', 'Conference Budget', 'Home Office Setup', 'Mental Health Support', 'Wellness Programs'
+  ];
+
+  const certificationOptions = [
+    'AWS Certified Solutions Architect', 'Google Cloud Professional', 'Microsoft Azure Fundamentals',
+    'Certified Kubernetes Administrator', 'Docker Certified Associate', 'PMP', 'Scrum Master',
+    'CompTIA Security+', 'CISSP', 'CISM', 'Oracle Certified Professional', 'Salesforce Certified',
+    'HubSpot Certified', 'Google Analytics Certified', 'Facebook Blueprint Certified'
+  ];
 
   useEffect(() => {
     fetchJobs();
@@ -25,13 +54,14 @@ export default function JobsPage() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/jobs?status=${activeTab}`);
+      const response = await apiCall(`/api/jobs?status=${activeTab}`);
       const data = await response.json();
       if (data.success) {
-        setJobs(data.data);
+        setJobs(data.data || []);
       }
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      setMessage({ type: 'error', text: 'Failed to fetch jobs' });
     } finally {
       setLoading(false);
     }
@@ -54,7 +84,8 @@ export default function JobsPage() {
 
   const handleCreateJob = async (jobData) => {
     try {
-      const response = await fetch('/api/jobs', {
+      setLoading(true);
+      const response = await apiCall('/api/jobs', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -66,15 +97,23 @@ export default function JobsPage() {
       if (data.success) {
         fetchJobs();
         setShowCreateModal(false);
+        setMessage({ type: 'success', text: 'Job created successfully!' });
+        setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to create job' });
       }
     } catch (error) {
       console.error('Error creating job:', error);
+      setMessage({ type: 'error', text: 'Failed to create job' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUpdateJob = async (jobData) => {
     try {
-      const response = await fetch(`/api/jobs/${selectedJob._id}`, {
+      setLoading(true);
+      const response = await apiCall(`/api/jobs/${selectedJob._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -87,15 +126,22 @@ export default function JobsPage() {
         fetchJobs();
         setShowEditModal(false);
         setSelectedJob(null);
+        setMessage({ type: 'success', text: 'Job updated successfully!' });
+        setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Failed to update job' });
       }
     } catch (error) {
       console.error('Error updating job:', error);
+      setMessage({ type: 'error', text: 'Failed to update job' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleStatusChange = async (jobId, newStatus) => {
     try {
-      const response = await fetch(`/api/jobs/${jobId}/status`, {
+      const response = await apiCall(`/api/jobs/${jobId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -106,9 +152,12 @@ export default function JobsPage() {
       const data = await response.json();
       if (data.success) {
         fetchJobs();
+        setMessage({ type: 'success', text: `Job status updated to ${newStatus}` });
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
       }
     } catch (error) {
       console.error('Error updating job status:', error);
+      setMessage({ type: 'error', text: 'Failed to update job status' });
     }
   };
 
@@ -132,11 +181,13 @@ export default function JobsPage() {
       });
 
       if (response.ok) {
-        // Refresh applications
         await fetchJobApplications(selectedJob._id);
+        setMessage({ type: 'success', text: `Application status updated to ${newStatus}` });
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
       }
     } catch (error) {
       console.error('Error updating application status:', error);
+      setMessage({ type: 'error', text: 'Failed to update application status' });
     }
   };
 
@@ -153,11 +204,11 @@ export default function JobsPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-gradient-to-r from-green-500 to-emerald-600';
-      case 'paused': return 'bg-gradient-to-r from-yellow-500 to-orange-600';
-      case 'closed': return 'bg-gradient-to-r from-gray-500 to-gray-600';
+      case 'active': return 'bg-gradient-to-r from-emerald-500 to-green-600';
+      case 'paused': return 'bg-gradient-to-r from-amber-500 to-orange-600';
+      case 'closed': return 'bg-gradient-to-r from-slate-500 to-gray-600';
       case 'draft': return 'bg-gradient-to-r from-blue-500 to-indigo-600';
-      default: return 'bg-gradient-to-r from-[#455185] to-[#ED1B2F]';
+      default: return 'bg-gradient-to-r from-purple-500 to-pink-600';
     }
   };
 
@@ -175,11 +226,11 @@ export default function JobsPage() {
 
   const getUrgencyColor = (urgency) => {
     switch (urgency) {
-      case 'critical': return 'border-l-[#ED1B2F] bg-red-500/20';
-      case 'high': return 'border-l-red-500 bg-red-500/15';
-      case 'medium': return 'border-l-yellow-500 bg-yellow-500/15';
-      case 'low': return 'border-l-green-500 bg-green-500/15';
-      default: return 'border-l-[#455185] bg-blue-500/15';
+      case 'critical': return 'border-l-red-500 bg-red-500/10';
+      case 'high': return 'border-l-orange-500 bg-orange-500/10';
+      case 'medium': return 'border-l-yellow-500 bg-yellow-500/10';
+      case 'low': return 'border-l-green-500 bg-green-500/10';
+      default: return 'border-l-blue-500 bg-blue-500/10';
     }
   };
 
@@ -193,6 +244,10 @@ export default function JobsPage() {
       case 'finance': return '💰';
       case 'hr': return '👥';
       case 'operations': return '⚙️';
+      case 'data science': return '📊';
+      case 'devops': return '🚀';
+      case 'qa': return '🔍';
+      case 'security': return '🔐';
       default: return '🏢';
     }
   };
@@ -231,7 +286,7 @@ export default function JobsPage() {
 
   const filteredJobs = jobs
     .filter(job => 
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (filterDepartment === 'all' || job.department === filterDepartment)
     )
     .sort((a, b) => {
@@ -249,13 +304,79 @@ export default function JobsPage() {
 
   const departments = [...new Set(jobs.map(job => job.department).filter(Boolean))];
 
+  const MultiSelectDropdown = ({ options, selected, onChange, placeholder }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const toggleOption = (option) => {
+      if (selected.includes(option)) {
+        onChange(selected.filter(item => item !== option));
+      } else {
+        onChange([...selected, option]);
+      }
+    };
+
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40 text-left flex justify-between items-center"
+        >
+          <span className={selected.length > 0 ? 'text-white' : 'text-gray-400'}>
+            {selected.length > 0 ? `${selected.length} selected` : placeholder}
+          </span>
+          <span className="text-gray-400">{isOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-white/20 rounded-xl max-h-60 overflow-y-auto shadow-xl">
+            {options.map((option) => (
+              <div
+                key={option}
+                onClick={() => toggleOption(option)}
+                className={`p-3 cursor-pointer hover:bg-white/10 transition-colors ${
+                  selected.includes(option) ? 'bg-blue-500/20 text-blue-300' : 'text-white'
+                }`}
+              >
+                <span className="mr-3 text-white">
+                  {selected.includes(option) ? '✓' : ''}
+                </span>
+                <span className="text-white">{option}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {selected.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selected.map((item) => (
+              <span
+                key={item}
+                className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-sm flex items-center space-x-2"
+              >
+                <span>{item}</span>
+                <button
+                  type="button"
+                  onClick={() => onChange(selected.filter(i => i !== item))}
+                  className="text-blue-300 hover:text-white"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const JobFormModal = ({ isEdit = false, onSubmit, onClose }) => {
     const [formData, setFormData] = useState(isEdit && selectedJob ? {
       title: selectedJob.title || '',
       description: selectedJob.description || '',
       department: selectedJob.department || '',
       experienceLevel: selectedJob.experienceLevel || 'mid',
-      skills: selectedJob.skills ? selectedJob.skills.join(', ') : '',
+      skills: selectedJob.skills || [],
       location: selectedJob.location || '',
       workMode: selectedJob.workMode || 'hybrid',
       type: selectedJob.type || 'Full-time',
@@ -264,11 +385,12 @@ export default function JobsPage() {
       positionCount: selectedJob.positionCount || 1,
       deadline: selectedJob.deadline ? new Date(selectedJob.deadline).toISOString().split('T')[0] : '',
       contractDuration: selectedJob.contractDuration || '',
-      benefits: selectedJob.benefits ? selectedJob.benefits.join(', ') : '',
+      benefits: selectedJob.benefits || [],
       requirements: {
         education: selectedJob.requirements?.education || '',
-        certifications: selectedJob.requirements?.certifications ? selectedJob.requirements.certifications.join(', ') : '',
-        languages: selectedJob.requirements?.languages ? selectedJob.requirements.languages.map(l => l.language || l).join(', ') : ''
+        certifications: selectedJob.requirements?.certifications || [],
+        languages: selectedJob.requirements?.languages?.map(l => l.language || '') || [],
+        experience: selectedJob.requirements?.experience || ''
       },
       reportingManager: {
         title: selectedJob.reportingManager?.title || '',
@@ -281,13 +403,17 @@ export default function JobsPage() {
         min: selectedJob.salaryRange?.min || '', 
         max: selectedJob.salaryRange?.max || '', 
         currency: selectedJob.salaryRange?.currency || 'USD' 
-      }
+      },
+      responsibilities: selectedJob.responsibilities || [],
+      qualifications: selectedJob.qualifications || [],
+      companyBenefits: selectedJob.companyBenefits || '',
+      workSchedule: selectedJob.workSchedule || 'standard'
     } : {
       title: '',
       description: '',
       department: '',
       experienceLevel: 'mid',
-      skills: '',
+      skills: [],
       location: '',
       workMode: 'hybrid',
       type: 'Full-time',
@@ -296,11 +422,12 @@ export default function JobsPage() {
       positionCount: 1,
       deadline: '',
       contractDuration: '',
-      benefits: '',
+      benefits: [],
       requirements: {
         education: '',
-        certifications: '',
-        languages: ''
+        certifications: [],
+        languages: [],
+        experience: ''
       },
       reportingManager: {
         title: '',
@@ -309,23 +436,18 @@ export default function JobsPage() {
       teamSize: '',
       travelRequired: 'none',
       securityClearance: 'none',
-      salaryRange: { min: '', max: '', currency: 'USD' }
+      salaryRange: { min: '', max: '', currency: 'USD' },
+      responsibilities: [],
+      qualifications: [],
+      companyBenefits: '',
+      workSchedule: 'standard'
     });
 
     const handleSubmit = (e) => {
       e.preventDefault();
       const jobData = {
         ...formData,
-        skills: formData.skills.split(',').map(skill => skill.trim()).filter(skill => skill),
-        benefits: formData.benefits.split(',').map(benefit => benefit.trim()).filter(benefit => benefit),
-        requirements: {
-          ...formData.requirements,
-          certifications: formData.requirements.certifications.split(',').map(cert => cert.trim()).filter(cert => cert),
-          languages: formData.requirements.languages.split(',').map(lang => ({
-            language: lang.trim(),
-            proficiency: 'intermediate'
-          })).filter(lang => lang.language)
-        },
+        status: formData.status || 'active', // Ensure new jobs are active by default
         teamSize: formData.teamSize ? parseInt(formData.teamSize) : undefined,
         positionCount: parseInt(formData.positionCount) || 1,
         deadline: formData.deadline || undefined,
@@ -333,6 +455,13 @@ export default function JobsPage() {
           min: formData.salaryRange.min ? parseInt(formData.salaryRange.min) : undefined,
           max: formData.salaryRange.max ? parseInt(formData.salaryRange.max) : undefined,
           currency: formData.salaryRange.currency
+        },
+        requirements: {
+          ...formData.requirements,
+          languages: formData.requirements.languages.map(lang => ({
+            language: lang,
+            proficiency: 'intermediate'
+          }))
         }
       };
       onSubmit(jobData);
@@ -363,263 +492,419 @@ export default function JobsPage() {
       }
     };
 
+    const addTextItem = (field, value) => {
+      if (value.trim()) {
+        setFormData(prev => ({
+          ...prev,
+          [field]: [...prev[field], value.trim()]
+        }));
+      }
+    };
+
+    const removeTextItem = (field, index) => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: prev[field].filter((_, i) => i !== index)
+      }));
+    };
+
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
+        <div className="bg-gradient-to-br from-slate-800 to-purple-800 rounded-3xl p-8 max-w-6xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border border-white/20">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">
-              {isEdit ? '✏️ Edit Position' : '➕ Create New Position'}
+              {isEdit ? '✏️ Edit Position' : '🚀 Create New Position'}
             </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+              className="p-3 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
             >
-              <span className="text-2xl">✕</span>
+              <span className="text-2xl">×</span>
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">📋 Basic Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="title"
-                  placeholder="Job Title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <input
-                  type="text"
-                  name="department"
-                  placeholder="Department"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  required
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <select
-                  name="experienceLevel"
-                  value={formData.experienceLevel}
-                  onChange={handleInputChange}
-                  required
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="entry">Entry Level</option>
-                  <option value="mid">Mid Level</option>
-                  <option value="senior">Senior Level</option>
-                  <option value="lead">Lead Level</option>
-                  <option value="director">Director Level</option>
-                  <option value="vp">VP Level</option>
-                </select>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Contract">Contract</option>
-                  <option value="Internship">Internship</option>
-                  <option value="Freelance">Freelance</option>
-                </select>
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>📋</span>
+                <span>Basic Information</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Job Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    placeholder="e.g. Senior Software Engineer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Department *</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="" style={{ backgroundColor: '#1e293b', color: 'white' }}>Select Department</option>
+                    {departmentOptions.map(dept => (
+                      <option key={dept} value={dept} style={{ backgroundColor: '#1e293b', color: 'white' }}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Experience Level *</label>
+                  <select
+                    name="experienceLevel"
+                    value={formData.experienceLevel}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="entry" style={{ backgroundColor: '#1e293b', color: 'white' }}>Entry Level (0-2 years)</option>
+                    <option value="mid" style={{ backgroundColor: '#1e293b', color: 'white' }}>Mid Level (2-5 years)</option>
+                    <option value="senior" style={{ backgroundColor: '#1e293b', color: 'white' }}>Senior Level (5-8 years)</option>
+                    <option value="lead" style={{ backgroundColor: '#1e293b', color: 'white' }}>Lead Level (8+ years)</option>
+                    <option value="director" style={{ backgroundColor: '#1e293b', color: 'white' }}>Director Level</option>
+                    <option value="vp" style={{ backgroundColor: '#1e293b', color: 'white' }}>VP Level</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Employment Type</label>
+                  <select
+                    name="type"
+                    value={formData.type}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="Full-time" style={{ backgroundColor: '#1e293b', color: 'white' }}>Full-time</option>
+                    <option value="Part-time" style={{ backgroundColor: '#1e293b', color: 'white' }}>Part-time</option>
+                    <option value="Contract" style={{ backgroundColor: '#1e293b', color: 'white' }}>Contract</option>
+                    <option value="Internship" style={{ backgroundColor: '#1e293b', color: 'white' }}>Internship</option>
+                    <option value="Freelance" style={{ backgroundColor: '#1e293b', color: 'white' }}>Freelance</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Priority Level</label>
+                  <select
+                    name="urgency"
+                    value={formData.urgency}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="critical">Critical Priority</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Number of Positions</label>
+                  <input
+                    type="number"
+                    name="positionCount"
+                    value={formData.positionCount}
+                    onChange={handleInputChange}
+                    min="1"
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Position Details */}
+            {/* Location & Work Details */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">🎯 Position Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <input
-                  type="number"
-                  name="positionCount"
-                  placeholder="Number of Positions"
-                  value={formData.positionCount}
-                  onChange={handleInputChange}
-                  min="1"
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <select
-                  name="urgency"
-                  value={formData.urgency}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="low">Low Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="high">High Priority</option>
-                  <option value="critical">Critical Priority</option>
-                </select>
-                <input
-                  type="date"
-                  name="deadline"
-                  placeholder="Application Deadline"
-                  value={formData.deadline}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <select
-                  name="noticePeriod"
-                  value={formData.noticePeriod}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="immediate">Immediate Start</option>
-                  <option value="2-weeks">2 Weeks Notice</option>
-                  <option value="1-month">1 Month Notice</option>
-                  <option value="2-months">2 Months Notice</option>
-                  <option value="3-months">3 Months Notice</option>
-                  <option value="negotiable">Negotiable</option>
-                </select>
-                <input
-                  type="number"
-                  name="teamSize"
-                  placeholder="Team Size (optional)"
-                  value={formData.teamSize}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-              </div>
-            </div>
-
-            {/* Location & Work Mode */}
-            <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">📍 Location & Work Mode</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  name="location"
-                  placeholder="Location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <select
-                  name="workMode"
-                  value={formData.workMode}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="remote">Remote</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="onsite">On-site</option>
-                </select>
-                <select
-                  name="travelRequired"
-                  value={formData.travelRequired}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="none">No Travel</option>
-                  <option value="minimal">Minimal Travel</option>
-                  <option value="occasional">Occasional Travel</option>
-                  <option value="frequent">Frequent Travel</option>
-                </select>
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>📍</span>
+                <span>Location & Work Details</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="e.g. New York, NY"
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Work Mode</label>
+                  <select
+                    name="workMode"
+                    value={formData.workMode}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="remote">Remote</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="onsite">On-site</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Travel Required</label>
+                  <select
+                    name="travelRequired"
+                    value={formData.travelRequired}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="none">No Travel</option>
+                    <option value="minimal">Minimal (1-10%)</option>
+                    <option value="occasional">Occasional (10-25%)</option>
+                    <option value="frequent">Frequent (25%+)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Work Schedule</label>
+                  <select
+                    name="workSchedule"
+                    value={formData.workSchedule}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="standard">Standard (9-5)</option>
+                    <option value="flexible">Flexible Hours</option>
+                    <option value="shift">Shift Work</option>
+                    <option value="weekend">Weekend Work</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Compensation */}
+            {/* Compensation & Benefits */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">💰 Compensation</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  type="number"
-                  name="salaryRange.min"
-                  placeholder="Min Salary (k)"
-                  value={formData.salaryRange.min}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>💰</span>
+                <span>Compensation & Benefits</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Min Salary (k)</label>
+                  <input
+                    type="number"
+                    name="salaryRange.min"
+                    value={formData.salaryRange.min}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 80"
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Max Salary (k)</label>
+                  <input
+                    type="number"
+                    name="salaryRange.max"
+                    value={formData.salaryRange.max}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 120"
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Currency</label>
+                  <select
+                    name="salaryRange.currency"
+                    value={formData.salaryRange.currency}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Benefits</label>
+                <MultiSelectDropdown
+                  options={benefitOptions}
+                  selected={formData.benefits}
+                  onChange={(selected) => setFormData(prev => ({ ...prev, benefits: selected }))}
+                  placeholder="Select benefits offered..."
                 />
-                <input
-                  type="number"
-                  name="salaryRange.max"
-                  placeholder="Max Salary (k)"
-                  value={formData.salaryRange.max}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <select
-                  name="salaryRange.currency"
-                  value={formData.salaryRange.currency}
-                  onChange={handleInputChange}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="CAD">CAD (C$)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
               </div>
             </div>
 
             {/* Skills & Requirements */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">🛠️ Skills & Requirements</h3>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  name="skills"
-                  placeholder="Required Skills (comma separated)"
-                  value={formData.skills}
-                  onChange={handleInputChange}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <input
-                  type="text"
-                  name="requirements.education"
-                  placeholder="Education Requirements"
-                  value={formData.requirements.education}
-                  onChange={handleInputChange}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <input
-                  type="text"
-                  name="requirements.certifications"
-                  placeholder="Required Certifications (comma separated)"
-                  value={formData.requirements.certifications}
-                  onChange={handleInputChange}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>🛠️</span>
+                <span>Skills & Requirements</span>
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Required Skills *</label>
+                  <MultiSelectDropdown
+                    options={skillOptions}
+                    selected={formData.skills}
+                    onChange={(selected) => setFormData(prev => ({ ...prev, skills: selected }))}
+                    placeholder="Select required skills..."
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Education Requirements</label>
+                    <input
+                      type="text"
+                      name="requirements.education"
+                      value={formData.requirements.education}
+                      onChange={handleInputChange}
+                      placeholder="e.g. Bachelor's degree in Computer Science"
+                      className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Experience Requirements</label>
+                    <input
+                      type="text"
+                      name="requirements.experience"
+                      value={formData.requirements.experience}
+                      onChange={handleInputChange}
+                      placeholder="e.g. 3+ years in web development"
+                      className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Preferred Certifications</label>
+                  <MultiSelectDropdown
+                    options={certificationOptions}
+                    selected={formData.requirements.certifications}
+                    onChange={(selected) => setFormData(prev => ({ 
+                      ...prev, 
+                      requirements: { ...prev.requirements, certifications: selected }
+                    }))}
+                    placeholder="Select preferred certifications..."
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Additional Information */}
+            {/* Job Description */}
             <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-4">ℹ️ Additional Information</h3>
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  name="benefits"
-                  placeholder="Benefits (comma separated)"
-                  value={formData.benefits}
-                  onChange={handleInputChange}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
-                <textarea
-                  name="description"
-                  placeholder="Job Description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  rows={6}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
-                />
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>📝</span>
+                <span>Job Description</span>
+              </h3>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Job Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    required
+                    rows={6}
+                    placeholder="Describe the role, responsibilities, and what the candidate will be working on..."
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40 resize-y"
+                  />
+                </div>
               </div>
             </div>
 
+            {/* Timeline & Additional Info */}
+            <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+              <h3 className="text-xl font-semibold text-white mb-6 flex items-center space-x-2">
+                <span>⏰</span>
+                <span>Timeline & Additional Information</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Application Deadline</label>
+                  <input
+                    type="date"
+                    name="deadline"
+                    value={formData.deadline}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Notice Period</label>
+                  <select
+                    name="noticePeriod"
+                    value={formData.noticePeriod}
+                    onChange={handleInputChange}
+                    className="w-full p-4 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+                    style={{ 
+                      color: 'white',
+                      backgroundColor: '#1e293b'
+                    }}
+                  >
+                    <option value="immediate">Immediate Start</option>
+                    <option value="2-weeks">2 Weeks Notice</option>
+                    <option value="1-month">1 Month Notice</option>
+                    <option value="2-months">2 Months Notice</option>
+                    <option value="3-months">3 Months Notice</option>
+                    <option value="negotiable">Negotiable</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Team Size</label>
+                  <input
+                    type="number"
+                    name="teamSize"
+                    value={formData.teamSize}
+                    onChange={handleInputChange}
+                    placeholder="e.g. 5"
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/40"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Form Actions */}
             <div className="flex space-x-4 pt-6">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-[#455185] to-[#ED1B2F] hover:from-[#364068] hover:to-[#d4162a] text-white py-4 px-8 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg"
+                disabled={loading}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
-                {isEdit ? 'Update Position' : 'Create Position'}
+                {loading && <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>}
+                <span>{loading ? 'Saving...' : (isEdit ? 'Update Position' : 'Create Position')}</span>
               </button>
               <button
                 type="button"
@@ -659,9 +944,9 @@ export default function JobsPage() {
           <div className="space-y-6">
             {applicationsData.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-6xl mb-4">📭</div>
-                <h4 className="text-2xl font-bold text-gray-400 mb-2">No Applications Yet</h4>
-                <p className="text-gray-500">This position hasn't received any applications yet.</p>
+                <div className="text-8xl mb-6">📭</div>
+                <h4 className="text-3xl font-bold text-gray-400 mb-4">No Applications Yet</h4>
+                <p className="text-gray-500 text-lg">This position hasn't received any applications yet.</p>
               </div>
             ) : (
               applicationsData.map((application) => (
@@ -717,89 +1002,6 @@ export default function JobsPage() {
                     </div>
                   </div>
 
-                  {/* Applicant Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h4 className="text-white font-semibold mb-2">💼 Professional</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Current Company:</span>
-                          <span className="text-white">{application.applicant?.profile?.currentCompany || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Designation:</span>
-                          <span className="text-white">{application.applicant?.profile?.currentDesignation || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Expected Salary:</span>
-                          <span className="text-green-400">{application.applicant?.profile?.expectedSalary || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Notice Period:</span>
-                          <span className="text-yellow-400">{application.applicant?.profile?.noticePeriod || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h4 className="text-white font-semibold mb-2">🎓 Education</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Degree:</span>
-                          <span className="text-white">{application.applicant?.profile?.degree || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">University:</span>
-                          <span className="text-white text-xs">{application.applicant?.profile?.university || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Year:</span>
-                          <span className="text-white">{application.applicant?.profile?.graduationYear || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">GPA:</span>
-                          <span className="text-white">{application.applicant?.profile?.gpa || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <h4 className="text-white font-semibold mb-2">📊 Match Analysis</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Match Score:</span>
-                          <span className="text-green-400 font-bold">{application.aiAnalysis?.matchPercentage || 'N/A'}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Experience Match:</span>
-                          <span className="text-white">{application.aiAnalysis?.experienceMatch || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Skills Match:</span>
-                          <span className="text-white">{application.aiAnalysis?.matchingSkills?.length || 0} skills</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Interview Ready:</span>
-                          <span className="text-white">{application.aiAnalysis?.interviewReadiness || 'N/A'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Skills */}
-                  {application.applicant?.profile?.skills && application.applicant.profile.skills.length > 0 && (
-                    <div className="mb-6">
-                      <h4 className="text-white font-semibold mb-3">🛠️ Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {application.applicant.profile.skills.map((skill, index) => (
-                          <span key={index} className="px-3 py-1 bg-blue-500/20 text-blue-300 text-sm rounded-lg border border-blue-500/30">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Cover Letter */}
                   {application.coverLetter && (
                     <div className="mb-6">
@@ -807,32 +1009,6 @@ export default function JobsPage() {
                       <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                         <p className="text-gray-300 leading-relaxed">{application.coverLetter}</p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* AI Analysis */}
-                  {application.aiAnalysis && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                      {application.aiAnalysis.strengths && application.aiAnalysis.strengths.length > 0 && (
-                        <div>
-                          <h5 className="text-green-400 font-medium mb-2">✅ Strengths</h5>
-                          <ul className="text-sm text-gray-300 space-y-1">
-                            {application.aiAnalysis.strengths.map((strength, index) => (
-                              <li key={index}>• {strength}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {application.aiAnalysis.weaknesses && application.aiAnalysis.weaknesses.length > 0 && (
-                        <div>
-                          <h5 className="text-yellow-400 font-medium mb-2">⚠️ Areas for Improvement</h5>
-                          <ul className="text-sm text-gray-300 space-y-1">
-                            {application.aiAnalysis.weaknesses.map((weakness, index) => (
-                              <li key={index}>• {weakness}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -848,7 +1024,7 @@ export default function JobsPage() {
                         📄 View Resume
                       </a>
                     )}
-                    
+
                     {application.status === 'pending' && (
                       <button 
                         onClick={() => updateApplicationStatus(application._id, 'reviewing')}
@@ -857,7 +1033,7 @@ export default function JobsPage() {
                         📋 Review
                       </button>
                     )}
-                    
+
                     {(application.status === 'reviewing' || application.status === 'pending') && (
                       <button 
                         onClick={() => updateApplicationStatus(application._id, 'shortlisted')}
@@ -866,16 +1042,7 @@ export default function JobsPage() {
                         ⭐ Shortlist
                       </button>
                     )}
-                    
-                    {application.status === 'shortlisted' && (
-                      <button 
-                        onClick={() => updateApplicationStatus(application._id, 'interview-scheduled')}
-                        className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
-                      >
-                        🎤 Schedule Interview
-                      </button>
-                    )}
-                    
+
                     <button 
                       onClick={() => updateApplicationStatus(application._id, 'rejected')}
                       className="px-4 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-300 hover:scale-105"
@@ -893,24 +1060,36 @@ export default function JobsPage() {
   };
 
   const JobCard = ({ job }) => (
-    <div className={`group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-102 border-l-4 ${getUrgencyColor(job.urgency)} border border-white/20 hover:border-white/40`}>
+    <div className={`group bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-3xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] border-l-4 ${getUrgencyColor(job.urgency)} border border-white/20 hover:border-white/40`}>
+      {/* Header */}
       <div className="flex justify-between items-start mb-6">
         <div className="flex items-center space-x-4">
-          <div className="text-4xl">{getDepartmentIcon(job.department)}</div>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center border border-white/20">
+            <span className="text-3xl">{getDepartmentIcon(job.department)}</span>
+          </div>
           <div>
-            <h3 className="text-2xl font-bold text-white mb-2">{job.title}</h3>
-            <div className="flex items-center space-x-4 text-gray-400">
-              <span className="flex items-center space-x-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <h3 className="text-2xl font-bold text-white">{job.title}</h3>
+              <span className="px-3 py-1 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 text-sm rounded-lg border border-cyan-500/30 font-mono">
+                {job.jobId || `JOB-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-gray-400">
+              <span className="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-lg">
                 <span>🏢</span>
                 <span>{job.department}</span>
               </span>
-              <span className="flex items-center space-x-1">
+              <span className="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-lg">
                 <span>{getWorkModeIcon(job.workMode)}</span>
                 <span>{job.workMode || 'Hybrid'}</span>
               </span>
-              <span className="flex items-center space-x-1">
+              <span className="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-lg">
                 <span>📍</span>
                 <span>{job.location || 'Remote'}</span>
+              </span>
+              <span className="flex items-center space-x-1 bg-white/5 px-2 py-1 rounded-lg">
+                <span>🎯</span>
+                <span>{job.experienceLevel}</span>
               </span>
             </div>
           </div>
@@ -920,13 +1099,14 @@ export default function JobsPage() {
             {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
           </div>
           {job.urgency === 'critical' && (
-            <div className="px-3 py-1 bg-[#ED1B2F] text-white text-xs font-bold rounded-full animate-pulse">
+            <div className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full animate-pulse">
               URGENT
             </div>
           )}
         </div>
       </div>
 
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl p-4 text-center border border-blue-500/30">
           <div className="text-2xl font-bold text-blue-400">{job.positionCount || 1}</div>
@@ -946,61 +1126,84 @@ export default function JobsPage() {
         </div>
       </div>
 
+      {/* Job Details */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="flex items-center space-x-2 text-gray-300">
-          <span className="text-lg">💰</span>
+        <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+          <span className="text-2xl">💰</span>
           <div>
-            <div className="font-semibold">{formatSalary(job.salaryRange)}</div>
+            <div className="font-semibold text-white">{formatSalary(job.salaryRange)}</div>
             <div className="text-sm text-gray-400">Salary Range</div>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-gray-300">
-          <span className="text-lg">⏰</span>
+        <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+          <span className="text-2xl">⏰</span>
           <div>
-            <div className="font-semibold">{getNoticePeriodDisplay(job.noticePeriod)}</div>
+            <div className="font-semibold text-white">{getNoticePeriodDisplay(job.noticePeriod)}</div>
             <div className="text-sm text-gray-400">Notice Period</div>
           </div>
         </div>
-        <div className="flex items-center space-x-2 text-gray-300">
-          <span className="text-lg">📅</span>
+        <div className="flex items-center space-x-3 p-4 bg-white/5 rounded-xl border border-white/10">
+          <span className="text-2xl">📅</span>
           <div>
-            <div className="font-semibold">{job.deadline ? new Date(job.deadline).toLocaleDateString() : 'Open'}</div>
+            <div className="font-semibold text-white">{job.deadline ? new Date(job.deadline).toLocaleDateString() : 'Open'}</div>
             <div className="text-sm text-gray-400">Application Deadline</div>
           </div>
         </div>
       </div>
 
+      {/* Skills */}
       {job.skills && job.skills.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-white font-semibold mb-3">Required Skills:</h4>
+          <h4 className="text-white font-semibold mb-3">🛠️ Required Skills:</h4>
           <div className="flex flex-wrap gap-2">
-            {job.skills.slice(0, 6).map((skill, index) => (
-              <span key={index} className="px-3 py-1 bg-gradient-to-r from-[#455185]/20 to-[#ED1B2F]/20 text-[#455185] bg-white/90 text-sm rounded-lg border border-[#455185]/20">
+            {job.skills.slice(0, 8).map((skill, index) => (
+              <span key={index} className="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 text-sm rounded-lg border border-purple-500/30">
                 {skill}
               </span>
             ))}
-            {job.skills.length > 6 && (
+            {job.skills.length > 8 && (
               <span className="px-3 py-1 bg-white/10 text-gray-300 text-sm rounded-lg border border-white/20">
-                +{job.skills.length - 6} more
+                +{job.skills.length - 8} more
               </span>
             )}
           </div>
         </div>
       )}
 
+      {/* Job Description Preview */}
+      {job.description && (
+        <div className="mb-6">
+          <h4 className="text-white font-semibold mb-3">📝 Job Description:</h4>
+          <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">{job.description}</p>
+        </div>
+      )}
+
+      {/* Action Buttons */}
       <div className="flex space-x-3">
         <button 
           onClick={() => handleViewApplications(job)}
-          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+          className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
         >
-          📋 View Applications ({job.applications || 0})
+          <span>📋</span>
+          <span>Applications ({job.applications || 0})</span>
         </button>
         <button 
           onClick={() => handleEditJob(job)}
-          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-xl font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
         >
-          ✏️ Edit Position
+          <span>✏️</span>
+          <span>Edit</span>
         </button>
+        <select
+          value={job.status}
+          onChange={(e) => handleStatusChange(job._id, e.target.value)}
+          className="px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-medium focus:outline-none hover:from-gray-600 hover:to-gray-700 transition-all duration-300"
+        >
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="closed">Closed</option>
+          <option value="draft">Draft</option>
+        </select>
       </div>
     </div>
   );
@@ -1027,27 +1230,43 @@ export default function JobsPage() {
           </p>
         </div>
 
+        {/* Message Display */}
+        {message.text && (
+          <div className={`mb-6 p-4 rounded-xl border ${
+            message.type === 'success' 
+              ? 'bg-green-500/20 border-green-500/50 text-green-300' 
+              : 'bg-red-500/20 border-red-500/50 text-red-300'
+          }`}>
+            <div className="flex items-center space-x-2">
+              <span>{message.type === 'success' ? '✅' : '❌'}</span>
+              <span>{message.text}</span>
+            </div>
+          </div>
+        )}
+
         {/* Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-center mb-12 space-y-6 lg:space-y-0">
+        <div className="space-y-6 mb-12">
           {/* Tab Navigation */}
-          <div className="flex space-x-2 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-2 shadow-lg border border-white/20">
-            {['active', 'paused', 'closed', 'draft'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
-                  activeTab === tab
-                    ? 'bg-gradient-to-r from-[#455185] to-[#ED1B2F] text-white shadow-lg'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)} Jobs
-              </button>
-            ))}
+          <div className="flex justify-center">
+            <div className="flex space-x-2 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-md rounded-2xl p-2 shadow-lg border border-white/20">
+              {['active', 'paused', 'closed', 'draft'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                    activeTab === tab
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)} Jobs
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Search, Filter and Create */}
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col lg:flex-row justify-center items-center gap-4">
             <div className="relative">
               <input
                 type="text"
@@ -1058,33 +1277,41 @@ export default function JobsPage() {
               />
               <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
             </div>
-            
+
             <select
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
-              className="px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              className="px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              style={{ 
+                color: 'white',
+                backgroundColor: '#1e293b'
+              }}
             >
-              <option value="all">All Departments</option>
+              <option value="all" style={{ backgroundColor: '#1e293b', color: 'white' }}>All Departments</option>
               {departments.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
+                <option key={dept} value={dept} style={{ backgroundColor: '#1e293b', color: 'white' }}>{dept}</option>
               ))}
             </select>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              className="px-4 py-3 bg-slate-800 border border-white/20 rounded-xl text-white focus:outline-none focus:border-white/40"
+              style={{ 
+                color: 'white',
+                backgroundColor: '#1e293b'
+              }}
             >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="applications">Most Applications</option>
-              <option value="views">Most Views</option>
-              <option value="urgency">By Urgency</option>
+              <option value="newest" style={{ backgroundColor: '#1e293b', color: 'white' }}>Newest First</option>
+              <option value="oldest" style={{ backgroundColor: '#1e293b', color: 'white' }}>Oldest First</option>
+              <option value="applications" style={{ backgroundColor: '#1e293b', color: 'white' }}>Most Applications</option>
+              <option value="views" style={{ backgroundColor: '#1e293b', color: 'white' }}>Most Views</option>
+              <option value="urgency" style={{ backgroundColor: '#1e293b', color: 'white' }}>By Urgency</option>
             </select>
-            
+
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-[#455185] to-[#ED1B2F] hover:from-[#364068] hover:to-[#d4162a] text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2 shadow-lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2 shadow-lg"
             >
               <span>➕</span>
               <span>Create Position</span>
@@ -1095,48 +1322,70 @@ export default function JobsPage() {
         {/* Job Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-12">
           <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-md rounded-3xl p-6 text-center shadow-lg border border-blue-500/30">
-            <div className="text-3xl mb-2">📋</div>
+            <div className="text-4xl mb-2">📋</div>
             <div className="text-3xl font-bold mb-1 text-blue-400">{jobs.filter(j => j.status === 'active').length}</div>
-            <div className="text-blue-300">Active Positions</div>
+            <div className="text-blue-300 text-sm">Active Positions</div>
           </div>
           <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-md rounded-3xl p-6 text-center shadow-lg border border-green-500/30">
-            <div className="text-3xl mb-2">👥</div>
+            <div className="text-4xl mb-2">👥</div>
             <div className="text-3xl font-bold mb-1 text-green-400">{jobs.reduce((sum, job) => sum + (job.applications || 0), 0)}</div>
-            <div className="text-green-300">Applications</div>
+            <div className="text-green-300 text-sm">Applications</div>
           </div>
           <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 backdrop-blur-md rounded-3xl p-6 text-center shadow-lg border border-purple-500/30">
-            <div className="text-3xl mb-2">👀</div>
+            <div className="text-4xl mb-2">👀</div>
             <div className="text-3xl font-bold mb-1 text-purple-400">{jobs.reduce((sum, job) => sum + (job.views || 0), 0)}</div>
-            <div className="text-purple-300">Total Views</div>
+            <div className="text-purple-300 text-sm">Total Views</div>
           </div>
           <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 backdrop-blur-md rounded-3xl p-6 text-center shadow-lg border border-yellow-500/30">
-            <div className="text-3xl mb-2">🎯</div>
+            <div className="text-4xl mb-2">🎯</div>
             <div className="text-3xl font-bold mb-1 text-yellow-400">{jobs.reduce((sum, job) => sum + (job.shortlisted || 0), 0)}</div>
-            <div className="text-yellow-300">Shortlisted</div>
+            <div className="text-yellow-300 text-sm">Shortlisted</div>
           </div>
           <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 backdrop-blur-md rounded-3xl p-6 text-center shadow-lg border border-red-500/30">
-            <div className="text-3xl mb-2">⚡</div>
+            <div className="text-4xl mb-2">⚡</div>
             <div className="text-3xl font-bold mb-1 text-red-400">{jobs.filter(j => j.urgency === 'critical' || j.urgency === 'high').length}</div>
-            <div className="text-red-300">Urgent Roles</div>
+            <div className="text-red-300 text-sm">Urgent Roles</div>
           </div>
         </div>
 
         {/* Jobs List */}
         <div className="space-y-8">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-white">
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Positions 
+              <span className="text-gray-400 text-lg ml-2">({filteredJobs.length} jobs)</span>
+            </h2>
+          </div>
+
           {loading ? (
             <div className="text-center py-16">
               <div className="text-8xl mb-6">⏳</div>
               <h3 className="text-3xl font-bold text-gray-400 mb-4">Loading positions...</h3>
+              <div className="flex justify-center space-x-2">
+                <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce"></div>
+                <div className="w-3 h-3 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-3 h-3 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
             </div>
           ) : filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
-              <JobCard key={job._id} job={job} />
-            ))
+            <div className="grid gap-8">
+              {filteredJobs.map((job, index) => (
+                <div key={job._id} className="animate-fade-in-up" style={{animationDelay: `${index * 0.1}s`}}>
+                  <JobCard job={job} />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center py-16">
               <div className="text-8xl mb-6">📭</div>
               <h3 className="text-3xl font-bold text-gray-400 mb-4">No positions found</h3>
-              <p className="text-gray-500 text-lg">Try adjusting your search or create a new job posting</p>
+              <p className="text-gray-500 text-lg mb-6">Try adjusting your search or create a new job posting</p>
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+              >
+                Create New Position
+              </button>
             </div>
           )}
         </div>

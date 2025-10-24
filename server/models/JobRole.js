@@ -1,7 +1,11 @@
-
 import mongoose from 'mongoose';
 
 const jobRoleSchema = new mongoose.Schema({
+  jobId: {
+    type: String,
+    unique: true,
+    required: false
+  },
   title: {
     type: String,
     required: true,
@@ -159,10 +163,44 @@ const jobRoleSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field before saving
-jobRoleSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
+// Generate unique jobId and update updatedAt field before saving
+jobRoleSchema.pre('save', async function(next) {
+  try {
+    if (this.isNew && !this.jobId) {
+      // Generate unique job ID like "JOB-2024-001"
+      const year = new Date().getFullYear();
+      let attempts = 0;
+      let isUnique = false;
+
+      while (!isUnique && attempts < 10) {
+        const randomNum = Math.floor(Math.random() * 9000) + 1000;
+        const generatedId = `JOB-${year}-${randomNum}`;
+
+        const existing = await this.constructor.findOne({ jobId: generatedId });
+        if (!existing) {
+          this.jobId = generatedId;
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (!isUnique) {
+        // Fallback with timestamp
+        this.jobId = `JOB-${year}-${Date.now()}`;
+      }
+    }
+
+    // Ensure jobId exists before saving
+    if (!this.jobId) {
+      const year = new Date().getFullYear();
+      this.jobId = `JOB-${year}-${Date.now()}`;
+    }
+
+    this.updatedAt = Date.now();
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 const JobRole = mongoose.model('JobRole', jobRoleSchema);

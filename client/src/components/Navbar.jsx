@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +14,7 @@ export default function Navbar() {
     { name: 'Analytics', href: '/analytics', icon: '📊' },
     { name: 'Jobs', href: '/jobs', icon: '💼' },
     { name: 'Candidates', href: '/candidates', icon: '👥' },
+    { name: 'Database', href: '/candidates-database', icon: '🗄️' },
   ];
 
   const jobSeekerNavigation = [
@@ -86,7 +86,7 @@ export default function Navbar() {
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="text-sm text-gray-300">Online</span>
             </div>
-            
+
             <div className="relative">
               <button 
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -157,7 +157,7 @@ export default function Navbar() {
                 </Link>
               ))}
             </div>
-            
+
             <div className="mt-6 pt-6 border-t border-white/20 space-y-3">
               <div className="px-6 py-2">
                 <p className="text-white font-medium">{user?.firstName} {user?.lastName}</p>
