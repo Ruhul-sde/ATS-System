@@ -59,59 +59,6 @@ const AuthPage = ({ onSuccess }) => {
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
       </div>
 
-      {/* Modern Glassmorphism Navbar */}
-      <nav className="relative z-20 bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4 group">
-              <div className="relative">
-                <div 
-                  className="absolute inset-0 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-300"
-                  style={{ background: 'linear-gradient(135deg, #ED1B2F, #455185)' }}
-                ></div>
-                <div className="relative w-12 h-12 p-2 bg-white/10 rounded-2xl backdrop-blur-sm transform group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
-                  <img 
-                    src="/src/assets/logo.png" 
-                    alt="ATS Pro Logo" 
-                    className="w-8 h-8 object-contain"
-                  />
-                </div>
-              </div>
-              <div>
-                <div 
-                  className="text-3xl font-black bg-gradient-to-r from-red-400 to-blue-400 bg-clip-text text-transparent"
-                  style={{ 
-                    backgroundImage: 'linear-gradient(135deg, #ED1B2F, #455185)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
-                  }}
-                >
-                  ATS Pro
-                </div>
-                <div className="text-xs text-gray-400 font-semibold tracking-wider">
-                  SMART HIRING PLATFORM
-                </div>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              {['Features', 'About', 'Contact'].map((item, index) => (
-                <a 
-                  key={item}
-                  href={`#${item.toLowerCase()}`} 
-                  className="relative text-gray-300 hover:text-white transition-all duration-300 group font-medium"
-                >
-                  {item}
-                  <div 
-                    className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300"
-                    style={{ background: 'linear-gradient(90deg, #ED1B2F, #455185)' }}
-                  ></div>
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content with 3D Card */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 pt-0">
         <div className="w-full max-w-md">
@@ -170,33 +117,6 @@ const AuthPage = ({ onSuccess }) => {
           </div>
         </div>
       </div>
-
-      {/* Enhanced Footer with Glassmorphism */}
-      <footer className="relative z-10 bg-white/5 backdrop-blur-xl border-t border-white/10 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-center md:text-left mb-6 md:mb-0">
-              <p className="text-gray-300 font-medium text-lg">© 2024 ATS Pro. All rights reserved.</p>
-              <p className="text-gray-400 text-sm mt-1">Streamlining recruitment with AI-powered insights.</p>
-            </div>
-            <div className="flex space-x-8 text-sm">
-              {['Privacy', 'Terms', 'Support'].map((item) => (
-                <a 
-                  key={item}
-                  href={`#${item.toLowerCase()}`} 
-                  className="text-gray-400 hover:text-white transition-colors duration-300 relative group font-medium"
-                >
-                  {item}
-                  <div 
-                    className="absolute bottom-0 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300"
-                    style={{ background: 'linear-gradient(90deg, #ED1B2F, #455185)' }}
-                  ></div>
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
 
       <style jsx>{`
         @keyframes float {

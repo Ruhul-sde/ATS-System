@@ -60,6 +60,45 @@ const jobApplicationSchema = new mongoose.Schema({
     interviewer: String,
     feedback: String
   },
+  applicationSource: {
+    type: String,
+    enum: ['LinkedIn', 'Naukri', 'Glassdoor', 'Direct Application', 'Indeed', 'Monster', 'Company Website', 'Referral', 'Campus Placement', 'Walk-in', 'Email', 'Other'],
+    default: 'Direct Application'
+  },
+  references: [{
+    name: { type: String, required: true },
+    designation: { type: String, required: true },
+    company: String,
+    email: { type: String, required: true },
+    phone: String,
+    relationship: {
+      type: String,
+      enum: ['Former Manager', 'Current Manager', 'Colleague', 'HR', 'Client', 'Mentor', 'Academic Reference', 'Other']
+    },
+    yearsKnown: String,
+    canContact: { type: Boolean, default: true },
+    contactedDate: Date,
+    feedback: String,
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5
+    }
+  }],
+  hiringDetails: {
+    hiringCompany: String,
+    hiringDepartment: String,
+    positionAppliedFor: String,
+    offerStatus: {
+      type: String,
+      enum: ['Not Offered', 'Offer Extended', 'Offer Accepted', 'Offer Declined', 'Negotiating'],
+      default: 'Not Offered'
+    },
+    offerDate: Date,
+    joiningDate: Date,
+    offeredSalary: String,
+    offeredDesignation: String
+  },
   statusHistory: [{
     status: String,
     changedBy: {

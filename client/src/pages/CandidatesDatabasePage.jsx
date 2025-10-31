@@ -220,6 +220,11 @@ export default function CandidatesPage() {
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
                 {candidate.noticePeriod || 'Notice period not specified'}
               </span>
+              {candidate.applicationSource && (
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  📍 {candidate.applicationSource}
+                </span>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
               <div className="flex items-center space-x-1">
@@ -984,6 +989,134 @@ export default function CandidatesPage() {
                 </div>
               </div>
             </div>
+
+            {/* References */}
+            {selectedCandidate.references && selectedCandidate.references.length > 0 && (
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">👥</span> References ({selectedCandidate.references.length})
+                </h3>
+                <div className="space-y-4">
+                  {selectedCandidate.references.map((ref, index) => (
+                    <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-400 block">Name:</span>
+                          <span className="text-white font-semibold">{ref.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Designation:</span>
+                          <span className="text-white">{ref.designation}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Company:</span>
+                          <span className="text-white">{ref.company || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Relationship:</span>
+                          <span className="text-white">{ref.relationship || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Email:</span>
+                          <span className="text-blue-400">{ref.email}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Phone:</span>
+                          <span className="text-white">{ref.phone || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Years Known:</span>
+                          <span className="text-white">{ref.yearsKnown || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block">Can Contact:</span>
+                          <span className={ref.canContact ? 'text-green-400' : 'text-red-400'}>
+                            {ref.canContact ? '✅ Yes' : '❌ No'}
+                          </span>
+                        </div>
+                        {ref.rating && (
+                          <div>
+                            <span className="text-gray-400 block">Rating:</span>
+                            <span className="text-yellow-400">
+                              {'⭐'.repeat(ref.rating)} ({ref.rating}/5)
+                            </span>
+                          </div>
+                        )}
+                        {ref.feedback && (
+                          <div className="col-span-2">
+                            <span className="text-gray-400 block mb-1">Feedback:</span>
+                            <span className="text-white text-xs">{ref.feedback}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Hiring Details */}
+            {selectedCandidate.hiringDetails && (
+              <div className="bg-white/5 rounded-xl p-6 border border-white/10 mb-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                  <span className="mr-2">💼</span> Hiring Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400 block">Hiring Company:</span>
+                    <span className="text-white font-semibold">{selectedCandidate.hiringDetails.hiringCompany || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Department:</span>
+                    <span className="text-white">{selectedCandidate.hiringDetails.hiringDepartment || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Position Applied For:</span>
+                    <span className="text-white font-semibold">{selectedCandidate.hiringDetails.positionAppliedFor || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Offer Status:</span>
+                    <span className={`font-semibold ${
+                      selectedCandidate.hiringDetails.offerStatus === 'Offer Accepted' ? 'text-green-400' :
+                      selectedCandidate.hiringDetails.offerStatus === 'Offer Extended' ? 'text-blue-400' :
+                      selectedCandidate.hiringDetails.offerStatus === 'Offer Declined' ? 'text-red-400' :
+                      selectedCandidate.hiringDetails.offerStatus === 'Negotiating' ? 'text-yellow-400' :
+                      'text-gray-400'
+                    }`}>
+                      {selectedCandidate.hiringDetails.offerStatus || 'Not Offered'}
+                    </span>
+                  </div>
+                  {selectedCandidate.hiringDetails.offerDate && (
+                    <div>
+                      <span className="text-gray-400 block">Offer Date:</span>
+                      <span className="text-white">
+                        {new Date(selectedCandidate.hiringDetails.offerDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCandidate.hiringDetails.joiningDate && (
+                    <div>
+                      <span className="text-gray-400 block">Joining Date:</span>
+                      <span className="text-white">
+                        {new Date(selectedCandidate.hiringDetails.joiningDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+                  {selectedCandidate.hiringDetails.offeredSalary && (
+                    <div>
+                      <span className="text-gray-400 block">Offered Salary:</span>
+                      <span className="text-green-400 font-semibold">{selectedCandidate.hiringDetails.offeredSalary}</span>
+                    </div>
+                  )}
+                  {selectedCandidate.hiringDetails.offeredDesignation && (
+                    <div>
+                      <span className="text-gray-400 block">Offered Designation:</span>
+                      <span className="text-white">{selectedCandidate.hiringDetails.offeredDesignation}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex space-x-4 pt-4 border-t border-white/10">

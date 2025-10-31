@@ -73,11 +73,15 @@ function AppContent() {
     <Routes>
       {/* Public routes - Always accessible */}
       <Route path="/login" element={
-        !isAuthenticated ? <AuthPage /> : <Navigate to="/" replace />
+        !isAuthenticated ? <AuthPage /> : <Navigate to="/dashboard" replace />
       } />
 
       {/* Protected routes - Require authentication */}
       <Route path="/" element={
+        !isAuthenticated ? <Navigate to="/login" replace /> : <Navigate to="/dashboard" replace />
+      } />
+
+      <Route path="/dashboard" element={
         isAuthenticated ? (
           <ProtectedRoute>
             {user?.role === 'admin' ? <DashboardPage /> : <JobSeekerDashboard />}
@@ -152,7 +156,7 @@ function AppContent() {
 
       {/* Catch all - redirect to appropriate page */}
       <Route path="*" element={
-        <Navigate to={isAuthenticated ? "/" : "/login"} replace />
+        <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
       } />
     </Routes>
   );

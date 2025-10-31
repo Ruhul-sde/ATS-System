@@ -15,6 +15,7 @@ import authRoutes from "./routes/auth.js";
 import jobSeekerRoutes from "./routes/jobSeeker.js";
 import jobRoutes from "./routes/jobs.js";
 import candidatesRoutes from "./routes/candidates.js";
+import adminRoutes from "./routes/admin.js"; // Import admin routes
 import fs from "fs"; // Import fs module
 
 const __filename = fileURLToPath(import.meta.url);
@@ -99,11 +100,12 @@ const upload = multer({
   },
 });
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/job-seeker", jobSeekerRoutes);
-app.use("/api/jobs", jobRoutes);
-app.use("/api/candidates", candidatesRoutes);
+// Use routes
+app.use('/api/auth', authRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/candidates', candidatesRoutes);
+app.use('/api/job-seeker', jobSeekerRoutes);
+app.use('/api/admin', adminRoutes); // Register admin routes
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -520,7 +522,7 @@ app.get("/api/admin/candidates", async (req, res) => {
         expectedSalary: applicant?.profile?.expectedSalary || "Not specified",
         appliedDate: app.createdAt,
         createdAt: app.createdAt,
-        avatar: applicant?.profile?.profilePictureUrl || getRandomAvatar(), // Use profile picture if available, otherwise fallback
+        avatar: applicant?.profile?.profilePicture?.fileUrl || getRandomAvatar(),
         skills: Array.isArray(skills)
           ? skills
           : ["JavaScript", "React", "Node.js"],
@@ -550,6 +552,15 @@ app.get("/api/admin/candidates", async (req, res) => {
         coverLetter: app.coverLetter,
         adminNotes: app.adminNotes,
         statusHistory: app.statusHistory || [],
+        // New fields
+        applicationSource: app.applicationSource || "Direct Application",
+        references: app.references || [],
+        hiringDetails: app.hiringDetails || {
+          hiringCompany: job?.department || "Not specified",
+          hiringDepartment: job?.department || "Not specified",
+          positionAppliedFor: job?.title || "Not specified",
+          offerStatus: "Not Offered"
+        },
         // Enhanced fields
         noticePeriod:
           applicant?.profile?.noticePeriod || generateNoticePeriod(),
@@ -576,9 +587,7 @@ app.get("/api/admin/candidates", async (req, res) => {
           applicant?.profile?.preferredLocation || applicant?.profile?.location,
         workAuthorization:
           applicant?.profile?.workAuthorization || "Authorized to work",
-        references: applicant?.profile?.references || [],
         interviews: app.interviewDetails || {},
-        applicationSource: "Direct Application",
         resumeUrl: applicant?.profile?.resume?.fileUrl || "",
         lastUpdated: app.updatedAt || app.createdAt,
       };
@@ -1504,7 +1513,7 @@ app.post("/api/admin/confirm-candidate", async (req, res) => {
 
     // Extract information from the analysis result
     const extractedInfo = candidateData.extractedInfo || {};
-    
+
     // Create user profile data
     const profileData = {
       phone: extractedInfo.phone || '',

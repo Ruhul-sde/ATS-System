@@ -9,7 +9,7 @@ export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
 
   const adminNavigation = [
-    { name: 'Dashboard', href: '/', icon: '🏠' },
+    { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { name: 'ATS', href: '/ats', icon: '🎯' },
     { name: 'Analytics', href: '/analytics', icon: '📊' },
     { name: 'Jobs', href: '/jobs', icon: '💼' },
@@ -18,7 +18,7 @@ export default function Navbar() {
   ];
 
   const jobSeekerNavigation = [
-    { name: 'Dashboard', href: '/', icon: '🏠' },
+    { name: 'Dashboard', href: '/dashboard', icon: '🏠' },
     { name: 'Jobs', href: '/jobs', icon: '💼' },
     { name: 'Applications', href: '/applications', icon: '📋' },
     { name: 'Profile', href: '/profile', icon: '👤' },
@@ -27,8 +27,8 @@ export default function Navbar() {
   const navigation = isAdmin ? adminNavigation : jobSeekerNavigation;
 
   const isActive = (href) => {
-    if (href === '/') {
-      return location.pathname === '/';
+    if (href === '/dashboard') {
+      return location.pathname === '/' || location.pathname === '/dashboard';
     }
     return location.pathname.startsWith(href);
   };
@@ -90,7 +90,7 @@ export default function Navbar() {
             <div className="relative">
               <button 
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full text-white font-medium hover:from-purple-600 hover:to-pink-700 transition-all duration-300 hover:scale-105"
+                className="flex items-center space-x-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white font-medium transition-all duration-300 hover:scale-105 border border-white/20"
               >
                 <span className="text-lg">{isAdmin ? '👑' : '👤'}</span>
                 <span className="hidden lg:block">{user?.firstName || (isAdmin ? 'Admin' : 'User')}</span>

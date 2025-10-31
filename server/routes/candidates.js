@@ -1,4 +1,3 @@
-
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
@@ -187,12 +186,12 @@ router.get('/profile', authenticateToken, async (req, res) => {
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const updateData = req.body;
-    
+
     // Validate required fields in personalInfo
     if (updateData.personalInfo) {
       const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
       const missingFields = requiredFields.filter(field => !updateData.personalInfo[field]);
-      
+
       if (missingFields.length > 0) {
         return res.status(400).json({
           success: false,
@@ -200,7 +199,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         });
       }
     }
-    
+
     const candidateProfile = await CandidateProfile.findOneAndUpdate(
       { 'personalInfo.email': req.user.email },
       updateData,
@@ -232,7 +231,7 @@ router.post('/resume', authenticateToken, upload.single('resume'), async (req, r
     }
 
     const fileUrl = `/uploads/resumes/${req.file.filename}`;
-    
+
     // Extract text from resume for AI analysis (optional)
     let extractedText = '';
     try {
@@ -253,7 +252,7 @@ router.post('/resume', authenticateToken, upload.single('resume'), async (req, r
           extractedText,
           'General candidate profile analysis for skill extraction and experience parsing'
         );
-        
+
         aiAnalysis = {
           extractedSkills: analysis.extractedInfo?.skills || [],
           extractedExperience: analysis.extractedInfo?.totalExperience || '',
@@ -321,10 +320,10 @@ router.get('/all', authenticateToken, async (req, res) => {
     }
 
     const { search, skills, experience, location, company, page = 1, limit = 20 } = req.query;
-    
+
     // Build search filter
     const filter = { isActive: true };
-    
+
     if (search) {
       filter.$or = [
         { 'personalInfo.firstName': { $regex: search, $options: 'i' } },
@@ -338,7 +337,7 @@ router.get('/all', authenticateToken, async (req, res) => {
         { 'educationHistory.graduation.university': { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     if (skills) {
       const skillsArray = skills.split(',').map(s => s.trim());
       filter.$or = [
@@ -346,7 +345,7 @@ router.get('/all', authenticateToken, async (req, res) => {
         { 'skillsAndCertifications.technicalSkills': { $in: skillsArray } }
       ];
     }
-    
+
     if (location) {
       filter.$or = [
         { 'personalInfo.location': { $regex: location, $options: 'i' } },
