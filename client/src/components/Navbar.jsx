@@ -46,54 +46,48 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-12 h-12 bg-white/10 rounded-2xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+          <Link to="/" className="flex items-center space-x-3 group flex-shrink-0">
+            <div className="w-10 h-10 bg-white/10 rounded-xl backdrop-blur-sm group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
               <img 
                 src="/src/assets/logo.png" 
                 alt="ATS Pro Logo" 
-                className="w-8 h-8 object-contain"
+                className="w-6 h-6 object-contain"
               />
             </div>
-            <div>
-              <div className="text-2xl font-black bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <div className="hidden lg:block">
+              <div className="text-xl font-black bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 ATS Pro
               </div>
-              <div className="text-xs text-gray-400 font-medium">Smart Hiring Platform</div>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-1 lg:space-x-2 flex-1 justify-center max-w-4xl">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+                className={`flex items-center space-x-1 lg:space-x-2 px-3 lg:px-4 py-2 rounded-xl font-medium transition-all duration-300 text-sm lg:text-base ${
                   isActive(item.href)
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10 hover:scale-105'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.name}</span>
+                <span className="text-base lg:text-lg">{item.icon}</span>
+                <span className="hidden lg:inline">{item.name}</span>
               </Link>
             ))}
           </div>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 rounded-full border border-white/20">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-300">Online</span>
-            </div>
-
+          <div className="hidden md:flex items-center space-x-2 flex-shrink-0">
             <div className="relative">
               <button 
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center space-x-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white font-medium transition-all duration-300 hover:scale-105 border border-white/20"
+                className="flex items-center space-x-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white font-medium transition-all duration-300 border border-white/20"
               >
                 <span className="text-lg">{isAdmin ? '👑' : '👤'}</span>
-                <span className="hidden lg:block">{user?.firstName || (isAdmin ? 'Admin' : 'User')}</span>
+                <span className="hidden xl:block text-sm">{user?.firstName || (isAdmin ? 'Admin' : 'User')}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

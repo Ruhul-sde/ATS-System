@@ -2,6 +2,8 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import JobApplication from '../models/JobApplication.js';
+import CandidateProfile from '../models/CandidateProfile.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
@@ -152,6 +154,151 @@ router.get('/candidates', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching candidates:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Confirm and add analyzed candidate to database
+router.post('/confirm-candidate', authenticateToken, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Admin role required.'
+      });
+    }
+
+    const candidateData = req.body;
+    
+    if (!candidateData.extractedInfo) {
+      return res.status(400).json({
+        success: false,
+        error: 'Candidate information is required'
+      });
+    }
+
+    const { extractedInfo } = candidateData;
+
+    // Check if user already exists
+    let user = await User.findOne({ email: extractedInfo.email });
+
+    if (!user) {
+      // Create new user account for the candidate
+      const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+      
+      user = new User({
+        firstName: extractedInfo.firstName || extractedInfo.name?.split(' ')[0] || 'Unknown',
+        lastName: extractedInfo.lastName || extractedInfo.name?.split(' ').slice(1).join(' ') || '',
+        email: extractedInfo.email,
+        password: tempPassword,
+        role: 'applicant',
+        profile: {
+          phone: extractedInfo.phone || '',
+          currentDesignation: extractedInfo.currentRole || '',
+          currentCompany: extractedInfo.currentCompany || '',
+          totalExperience: extractedInfo.totalYearsExperience || '',
+          relevantExperience: extractedInfo.relevantExperience || '',
+          degree: extractedInfo.degree || extractedInfo.education || '',
+          university: extractedInfo.university || '',
+          graduationYear: extractedInfo.graduationYear || null,
+          skills: extractedInfo.skills || [],
+          bio: '',
+          address: {
+            city: extractedInfo.location || '',
+            country: 'India'
+          }
+        }
+      });
+
+      await user.save();
+    }
+
+    // Create or update candidate profile
+    const candidateProfile = await CandidateProfile.findOneAndUpdate(
+      { 'personalInfo.email': extractedInfo.email },
+      {
+        personalInfo: {
+          firstName: extractedInfo.firstName || extractedInfo.name?.split(' ')[0] || 'Unknown',
+          lastName: extractedInfo.lastName || extractedInfo.name?.split(' ').slice(1).join(' ') || '',
+          email: extractedInfo.email,
+          phone: extractedInfo.phone || '',
+          alternatePhone: '',
+          dateOfBirth: null,
+          profilePictureUrl: '',
+          address: {
+            street: '',
+            city: extractedInfo.location || '',
+            state: '',
+            postalCode: '',
+            country: 'India'
+          }
+        },
+        professionalInfo: {
+          currentRole: extractedInfo.currentRole || '',
+          currentCompany: extractedInfo.currentCompany || '',
+          totalExperience: extractedInfo.totalYearsExperience || '',
+          relevantExperience: extractedInfo.relevantExperience || '',
+          expectedSalary: '',
+          currentSalary: '',
+          noticePeriod: '',
+          workAuthorization: '',
+          bio: '',
+          availability: ''
+        },
+        educationHistory: {
+          graduation: {
+            degree: extractedInfo.degree || extractedInfo.education || '',
+            specialization: '',
+            university: extractedInfo.university || '',
+            collegeName: '',
+            yearOfPassing: extractedInfo.graduationYear || null,
+            cgpa: '',
+            percentage: '',
+            grade: '',
+            projects: []
+          }
+        },
+        skillsAndCertifications: {
+          technicalSkills: (extractedInfo.skills || []).map(skill => ({
+            skillName: skill,
+            proficiencyLevel: 'intermediate',
+            yearsOfExperience: 0
+          })),
+          softSkills: [],
+          certifications: (extractedInfo.certifications || []).map(cert => ({
+            certificationName: cert,
+            issuingOrganization: '',
+            issueDate: null,
+            expiryDate: null,
+            credentialId: '',
+            credentialUrl: ''
+          })),
+          languages: (extractedInfo.languages || []).map(lang => ({
+            language: lang,
+            proficiency: 'fluent'
+          }))
+        },
+        source: 'ATS Resume Analysis',
+        createdBy: req.user._id
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        user,
+        candidateProfile
+      },
+      message: 'Candidate added to database successfully'
+    });
+
+  } catch (error) {
+    console.error('Error confirming candidate:', error);
     res.status(500).json({
       success: false,
       error: error.message

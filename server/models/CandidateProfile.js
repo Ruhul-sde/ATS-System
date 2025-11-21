@@ -349,8 +349,7 @@ const candidateProfileSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for search and performance
-candidateProfileSchema.index({ candidateId: 1 });
+// Indexes for search and performance (candidateId index is automatic due to unique: true)
 candidateProfileSchema.index({ 'personalInfo.email': 1 });
 candidateProfileSchema.index({ 'personalInfo.firstName': 1, 'personalInfo.lastName': 1 });
 candidateProfileSchema.index({ 'skillsAndCertifications.technicalSkills.skillName': 1 });

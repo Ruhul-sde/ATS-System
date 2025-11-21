@@ -17,6 +17,7 @@ import jobRoutes from "./routes/jobs.js";
 import candidatesRoutes from "./routes/candidates.js";
 import adminRoutes from "./routes/admin.js"; // Import admin routes
 import fs from "fs"; // Import fs module
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1537,12 +1538,16 @@ app.post("/api/admin/confirm-candidate", async (req, res) => {
       }
     };
 
+    // Hash the temporary password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash('tempPassword123', saltRounds);
+
     // Create new user
     const newUser = new User({
       firstName: extractedInfo.firstName || extractedInfo.name?.split(' ')[0] || 'Unknown',
       lastName: extractedInfo.lastName || extractedInfo.name?.split(' ').slice(1).join(' ') || '',
       email: extractedInfo.email || `candidate.${Date.now()}@example.com`,
-      password: 'tempPassword123', // Temporary password
+      password: hashedPassword, // Use hashed password
       role: 'applicant',
       profile: profileData,
       isActive: true,
@@ -1630,9 +1635,23 @@ app.post("/api/analyze", upload.array("resumes"), async (req, res) => {
       });
     }
 
+    // Save uploaded files to disk for processing
+    const savedFiles = await Promise.all(
+      req.files.map(async (file) => {
+        const filePath = path.join(__dirname, '..', 'uploads', 'resumes', `temp-${Date.now()}-${file.originalname}`);
+        await fs.writeFile(filePath, file.buffer);
+        return {
+          originalname: file.originalname,
+          path: filePath,
+          buffer: file.buffer,
+          mimetype: file.mimetype
+        };
+      })
+    );
+
     // Process uploaded files with proper PDF parsing
     const resumes = await Promise.all(
-      req.files.map(async (file) => {
+      savedFiles.map(async (file) => {
         let text = "";
 
         try {
@@ -1641,6 +1660,11 @@ app.post("/api/analyze", upload.array("resumes"), async (req, res) => {
             const pdf = (await import("pdf-parse")).default;
             const pdfData = await pdf(file.buffer);
             text = pdfData.text;
+          } else if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+            // Handle DOCX files
+            const mammoth = (await import("mammoth")).default;
+            const result = await mammoth.extractRawText({ buffer: file.buffer });
+            text = result.value;
           } else {
             // For other file types, use simple text extraction
             text = file.buffer.toString("utf-8");
@@ -1652,6 +1676,13 @@ app.post("/api/analyze", upload.array("resumes"), async (req, res) => {
         } catch (parseError) {
           console.error(`Error parsing ${file.originalname}:`, parseError);
           text = `Error extracting text from ${file.originalname}: ${parseError.message}`;
+        } finally {
+          // Clean up temporary file
+          try {
+            await fs.unlink(file.path);
+          } catch (unlinkError) {
+            console.error(`Error deleting temp file ${file.path}:`, unlinkError);
+          }
         }
 
         return {
